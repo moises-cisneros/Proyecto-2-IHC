@@ -6,7 +6,7 @@
 * **Modalidad P1:** Con IA
 * **Modalidad P2:** Con IA
 * **Proyecto ejecutado:** Sí
-* **Primer commit:** `6fa7e9dac6abbbdf4151c9cb1489f10ac5370574`
+* **Primer commit:** 224b81d73b89ae4bbe7bd47a1bb1c4e516e7f9b4
 
 ## Integrantes
 
