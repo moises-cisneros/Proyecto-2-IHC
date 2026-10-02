@@ -1,8 +1,9 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
+import { CalendarDays, LoaderCircle } from "lucide-react";
 import type { PlanInput } from "../../api/client";
 import type { AddPlanResult } from "../../hooks/usePlans";
-import { Button } from "../atoms/Button";
+import { Button } from "@/components/ui/button";
 import { Field } from "../atoms/Field";
 import { TextArea } from "../atoms/TextArea";
 import { ErrorAlert } from "./Notices";
@@ -55,16 +56,12 @@ export function PlanForm({ onSubmit, onCancel }: PlanFormProps) {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      noValidate
-      aria-label="Nuevo plan"
-      className="mb-l rounded-base border border-border bg-card p-l"
-    >
+    <form onSubmit={handleSubmit} noValidate className="grid gap-4">
       <ErrorAlert message={formError} />
       <TextArea
         id="plan-description"
         label="Descripción"
+        placeholder="Ej. Cena de cumpleaños en casa de Ana"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         error={errors.description}
@@ -73,16 +70,18 @@ export function PlanForm({ onSubmit, onCancel }: PlanFormProps) {
         id="plan-due-date"
         label="Fecha límite"
         type="date"
+        icon={CalendarDays}
         value={dueDate}
         onChange={(e) => setDueDate(e.target.value)}
         error={errors.dueDate}
       />
-      <div className="flex flex-wrap gap-s">
-        <Button type="submit" disabled={submitting}>
-          {submitting ? "Creando…" : "Crear plan"}
-        </Button>
-        <Button type="button" variant="secondary" onClick={onCancel} disabled={submitting}>
+      <div className="mt-2 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <Button type="button" variant="outline" onClick={onCancel} disabled={submitting}>
           Cancelar
+        </Button>
+        <Button type="submit" disabled={submitting}>
+          {submitting ? <LoaderCircle aria-hidden="true" className="animate-spin" /> : null}
+          {submitting ? "Creando…" : "Crear plan"}
         </Button>
       </div>
     </form>

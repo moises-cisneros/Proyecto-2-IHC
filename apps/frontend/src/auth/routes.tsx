@@ -1,6 +1,6 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "./AuthContext";
-import { LoadingScreen } from "../components/ui";
+import { LoadingScreen } from "../components/templates/LoadingScreen";
 import { AppShell } from "../components/templates/AppShell";
 
 export function ProtectedRoute() {

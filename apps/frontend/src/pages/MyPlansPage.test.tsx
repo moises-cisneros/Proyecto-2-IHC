@@ -56,7 +56,7 @@ describe("MyPlansPage", () => {
     await userEvent.click(screen.getByRole("button", { name: "Cancelar" }));
     await createViaForm();
 
-    expect(await screen.findByRole("article")).toHaveTextContent("3f2a9c1e");
+    expect(await screen.findByRole("article")).toHaveTextContent("Cena de grupo");
     expect(screen.getByText("24 de diciembre de 2026")).toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent("Plan creado");
     expect(screen.queryByLabelText("ID del plan")).not.toBeInTheDocument();
@@ -70,11 +70,11 @@ describe("MyPlansPage", () => {
   it("still shows the card after a remount with the persisted list", async () => {
     listPlans.mockResolvedValue({ plans: [saved] });
     const first = render(<MyPlansPage />);
-    expect(await screen.findByRole("article")).toHaveTextContent("3f2a9c1e");
+    expect(await screen.findByRole("article")).toHaveTextContent("Cena de grupo");
     first.unmount();
 
     render(<MyPlansPage />);
-    expect(await screen.findByRole("article")).toHaveTextContent("3f2a9c1e");
+    expect(await screen.findByRole("article")).toHaveTextContent("Cena de grupo");
   });
 
   it("keeps the form open with an error when the server rejects the plan", async () => {
@@ -90,7 +90,8 @@ describe("MyPlansPage", () => {
       expect(screen.getByText("Ingresa una fecha válida", { selector: "p" })).toBeInTheDocument(),
     );
     expect(screen.getByLabelText("Descripción")).toHaveValue("Cena de grupo");
-    expect(screen.getAllByRole("article")).toHaveLength(1);
+    // The modal hides the page behind it from the accessibility tree, hence `hidden: true`.
+    expect(screen.getAllByRole("article", { hidden: true })).toHaveLength(1);
   });
 
   it("closes the form on cancel without creating a plan", async () => {

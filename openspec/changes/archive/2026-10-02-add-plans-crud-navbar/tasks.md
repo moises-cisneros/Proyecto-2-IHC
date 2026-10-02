@@ -49,5 +49,5 @@
 
 - [x] 8.1 Run all backend and frontend tests via the vitest MCP server and confirm at least 4 new tests per workspace pass
 - [x] 8.2 Search the new components for raw hex/rgb/palette colors and for legacy tokens (design-tokens spec)
-- [ ] 8.3 Manual check with `pnpm dev`: create a plan → card appears → reload → card still visible; duplicate ID shows an error; logout from the navbar works at 320px width
+- [x] 8.3 Manual check with `pnpm dev`: create a plan → card appears → reload → card still visible; duplicate ID shows an error; logout from the navbar works at 320px width
 - [x] 8.4 Update the README with the new flow and note it in the OpenSpec change before archiving

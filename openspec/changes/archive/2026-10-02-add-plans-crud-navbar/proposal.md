@@ -13,6 +13,7 @@
 - Introduce Vitest in both workspaces with at least 4 unit tests for the new functionality, run via the vitest MCP server.
 
 Assumptions (recorded, not asked):
+
 - The plan ID is entered by the user (a short code such as `PLAN-001`) and is unique per user; a duplicate is rejected with a field error.
 - The due date is a calendar date (no time). Past dates are allowed.
 - Scope is create + list only; edit and delete are out of scope.
@@ -21,10 +22,12 @@ Assumptions (recorded, not asked):
 ## Capabilities
 
 ### New Capabilities
+
 - `plans`: creating a plan (ID, description, due date) and listing the signed-in user's plans as cards, live and persisted.
 - `app-navbar`: navbar shown on authenticated screens with the brand mark, profile icon, and the logout button.
 
 ### Modified Capabilities
+
 - `access-routes`: the "Protected plans route" requirement changes: the logout button moves from the page body into the navbar.
 
 ## Impact

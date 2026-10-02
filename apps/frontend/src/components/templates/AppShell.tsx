@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
 import { Navbar } from "../organisms/Navbar";
 
-/** Layout for authenticated screens: navbar on top, page content below. */
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -20,9 +19,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <>
+    <div className="min-h-screen bg-mesh">
       <Navbar name={user?.name ?? ""} onLogout={handleLogout} pending={pending} />
-      <main className="mx-auto max-w-180 px-l pb-xl pt-l">{children}</main>
-    </>
+      <main className="mx-auto max-w-5xl px-4 pb-16 pt-8 sm:px-6">{children}</main>
+    </div>
   );
 }

@@ -1,24 +1,22 @@
 import type { ReactNode } from "react";
+import { CircleAlert, CircleCheck } from "lucide-react";
+import { Alert } from "@/components/ui/alert";
 
 export function ErrorAlert({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <p
-      role="alert"
-      className="mb-m rounded-sm border border-error bg-[color-mix(in_srgb,var(--color-error)_8%,var(--color-card))] px-m py-s text-label text-error"
-    >
-      {message}
-    </p>
+    <Alert role="alert" variant="error">
+      <CircleAlert aria-hidden="true" />
+      <span>{message}</span>
+    </Alert>
   );
 }
 
 export function SuccessNotice({ children }: { children: ReactNode }) {
   return (
-    <div
-      role="status"
-      className="mb-m rounded-sm border border-success bg-card px-m py-s text-label text-text"
-    >
-      {children}
-    </div>
+    <Alert role="status" variant="success">
+      <CircleCheck aria-hidden="true" />
+      <div className="min-w-0">{children}</div>
+    </Alert>
   );
 }

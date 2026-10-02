@@ -5,12 +5,14 @@
 ## Goals / Non-Goals
 
 **Goals:**
+
 - Server is the source of truth; the UI adds the created plan from the POST response, so the card shows instantly without refetching or reloading.
 - Reuse existing patterns (zod schemas + `fieldErrors`, `requireAuth`, `ApiError`, `Field`, `PrimaryButton`).
 - Build UI in design order and keep `ui.tsx` consumers working.
 - Testable units that do not need a live database.
 
 **Non-Goals:**
+
 - Edit/delete, pagination, filtering, optimistic updates, offline mode, real-time sync across tabs.
 - New design tokens (existing roles, scale, and radii are enough).
 

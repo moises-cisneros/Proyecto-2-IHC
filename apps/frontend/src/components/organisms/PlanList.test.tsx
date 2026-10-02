@@ -11,21 +11,14 @@ const plan = (name: string, dueDate: string): Plan => ({
 });
 
 describe("PlanList", () => {
-  it("renders a card per plan with short id, description and Spanish date", () => {
+  it("renders a card per plan with description and Spanish date, without exposing the id", () => {
     const item = plan("PLAN-001", "2026-12-24");
     render(<PlanList plans={[item]} />);
     const card = screen.getByRole("article");
-    expect(within(card).getByText("3f2a9c1e")).toBeInTheDocument();
-    expect(within(card).queryByText(item.id)).not.toBeInTheDocument();
+    expect(card).not.toHaveTextContent("3f2a9c1e");
+    expect(within(card).queryByTitle(item.id)).not.toBeInTheDocument();
     expect(within(card).getByText("Descripción de PLAN-001")).toBeInTheDocument();
     expect(within(card).getByText("24 de diciembre de 2026")).toBeInTheDocument();
-  });
-
-  it("exposes the full id through a title and aria-label", () => {
-    const item = plan("X", "2026-05-05");
-    render(<PlanList plans={[item]} />);
-    expect(screen.getByTitle(item.id)).toHaveTextContent("3f2a9c1e");
-    expect(screen.getByLabelText(`ID completo: ${item.id}`)).toBeInTheDocument();
   });
 
   it("does not shift the date across time zones (1 January stays 1 January)", () => {

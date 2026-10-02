@@ -1,9 +1,14 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { LoaderCircle, Lock, LogIn, Mail } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { ApiError } from "../api/client";
-import { ErrorAlert, Field, FormCard, PrimaryButton, linkClass } from "../components/ui";
+import { Button } from "@/components/ui/button";
+import { Field } from "../components/atoms/Field";
+import { TextLink } from "../components/atoms/TextLink";
+import { ErrorAlert } from "../components/molecules/Notices";
+import { AuthDialog, AuthFooter } from "../components/templates/AuthDialog";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -40,13 +45,18 @@ export default function LoginPage() {
   }
 
   return (
-    <FormCard title="Iniciar sesión">
-      <form onSubmit={handleSubmit} noValidate>
+    <AuthDialog
+      title="Iniciar sesión"
+      description="Entra para ver y organizar los planes de tu grupo."
+      icon={LogIn}
+    >
+      <form onSubmit={handleSubmit} noValidate className="grid gap-4">
         <ErrorAlert message={formError} />
         <Field
           id="email"
           label="Correo electrónico"
           type="email"
+          icon={Mail}
           autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -56,24 +66,21 @@ export default function LoginPage() {
           id="password"
           label="Contraseña"
           type="password"
+          icon={Lock}
           autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           error={errors.password}
         />
-        <PrimaryButton type="submit" disabled={submitting}>
+        <Button type="submit" size="lg" disabled={submitting} className="mt-1 w-full">
+          {submitting ? <LoaderCircle aria-hidden="true" className="animate-spin" /> : null}
           {submitting ? "Entrando…" : "Entrar"}
-        </PrimaryButton>
+        </Button>
       </form>
-      <p className="mt-l text-body text-text-muted">
-        <Link to="/recover" className={linkClass}>
-          ¿Olvidaste tu contraseña?
-        </Link>
-        {" · "}
-        <Link to="/register" className={linkClass}>
-          Crear cuenta
-        </Link>
-      </p>
-    </FormCard>
+      <AuthFooter>
+        <TextLink to="/recover">¿Olvidaste tu contraseña?</TextLink>
+        <TextLink to="/register">Crear cuenta</TextLink>
+      </AuthFooter>
+    </AuthDialog>
   );
 }
