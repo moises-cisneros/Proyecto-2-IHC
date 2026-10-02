@@ -73,3 +73,8 @@ Las credenciales de los usuarios sembrados (solo para pruebas) están documentad
 
 - Código, identificadores y comentarios en inglés; textos de interfaz y documentación en español.
 - Conventional Commits y sin atribución de IA en los commits (ver [CONTRIBUTING.md](CONTRIBUTING.md)).
+
+## 8. Pruebas Unitarias (Vitest)
+
+- **Obligatorio:** Se deben crear y ejecutar al menos 4 pruebas unitarias por cada funcionalidad nueva implementada.
+- **Uso de MCP:** Es obligatorio utilizar las herramientas del servidor MCP de `vitest` (como `run_tests`, `list_tests`, etc.) para verificar el correcto funcionamiento y documentar los resultados de las pruebas.

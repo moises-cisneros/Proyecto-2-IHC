@@ -1,6 +1,7 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 import { LoadingScreen } from "../components/ui";
+import { AppShell } from "../components/templates/AppShell";
 
 export function ProtectedRoute() {
   const { user, loading } = useAuth();
@@ -8,7 +9,11 @@ export function ProtectedRoute() {
 
   if (loading) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" replace state={{ from: location }} />;
-  return <Outlet />;
+  return (
+    <AppShell>
+      <Outlet />
+    </AppShell>
+  );
 }
 
 export function GuestRoute() {
