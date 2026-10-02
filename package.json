@@ -1,0 +1,18 @@
+{
+  "name": "planazo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Planazo: ayudar a un grupo a organizar un plan.",
+  "packageManager": "pnpm@10.28.2",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "docker compose up --build",
+    "down": "docker compose down",
+    "logs": "docker compose logs -f",
+    "seed": "pnpm --filter backend prisma db seed",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r --if-present lint"
+  }
+}

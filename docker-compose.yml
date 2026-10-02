@@ -1,0 +1,52 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-planazo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-planazo}
+      POSTGRES_DB: ${POSTGRES_DB:-planazo_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - planazo_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile.dev
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: "3000"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-planazo}:${POSTGRES_PASSWORD:-planazo}@db:5432/${POSTGRES_DB:-planazo_db}?schema=public
+      JWT_SECRET: ${JWT_SECRET:-dev-only-change-me}
+      CLIENT_ORIGIN: http://localhost:5173
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps/backend:/app/apps/backend
+      - /app/apps/backend/node_modules
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile.dev
+    depends_on:
+      - backend
+    environment:
+      VITE_API_PROXY_TARGET: http://backend:3000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./apps/frontend:/app/apps/frontend
+      - /app/apps/frontend/node_modules
+
+volumes:
+  planazo_pgdata:
