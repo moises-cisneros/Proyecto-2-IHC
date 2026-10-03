@@ -5,6 +5,19 @@ export interface PublicUser {
   createdAt: string;
 }
 
+export interface Plan {
+  id: string;
+  description: string;
+  /** Calendar date as YYYY-MM-DD. */
+  dueDate: string;
+  createdAt: string;
+}
+
+export interface PlanInput {
+  description: string;
+  dueDate: string;
+}
+
 export class ApiError extends Error {
   status: number;
   fieldErrors: Record<string, string>;
@@ -56,4 +69,6 @@ export const api = {
   recover: (email: string) => post<{ message: string; token?: string }>("/auth/recover", { email }),
   recoverConfirm: (email: string, token: string, newPassword: string) =>
     post<{ message: string }>("/auth/recover/confirm", { email, token, newPassword }),
+  listPlans: () => request<{ plans: Plan[] }>("/plans"),
+  createPlan: (input: PlanInput) => post<{ plan: Plan }>("/plans", input),
 };

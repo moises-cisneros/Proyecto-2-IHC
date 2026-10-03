@@ -3,8 +3,14 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import { config } from "./lib/config.js";
 import { authRouter } from "./routes/auth.js";
+import { createPlansRouter, createPrismaPlansStore, type PlansStore } from "./routes/plans.js";
+import { requireAuth } from "./middleware/requireAuth.js";
 
-export function createApp() {
+export interface AppOptions {
+  plansStore?: PlansStore;
+}
+
+export function createApp(options: AppOptions = {}) {
   const app = express();
 
   app.use(cors({ origin: config.clientOrigin, credentials: true }));
@@ -15,6 +21,11 @@ export function createApp() {
     res.status(200).json({ status: "ok" });
   });
   app.use("/api/auth", authRouter);
+  app.use(
+    "/api/plans",
+    requireAuth,
+    createPlansRouter(options.plansStore ?? createPrismaPlansStore()),
+  );
 
   app.use((_req, res) => {
     res.status(404).json({ message: "Ruta no encontrada" });

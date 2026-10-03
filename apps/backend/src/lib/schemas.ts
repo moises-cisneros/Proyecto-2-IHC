@@ -27,6 +27,31 @@ export const recoverConfirmSchema = z.object({
   newPassword: password,
 });
 
+const DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+function isRealCalendarDate(value: string): boolean {
+  const match = DATE_PATTERN.exec(value);
+  if (!match) return false;
+  const [year, month, day] = [Number(match[1]), Number(match[2]), Number(match[3])];
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return (
+    date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
+  );
+}
+
+export const planSchema = z.object({
+  description: z
+    .string("La descripción es obligatoria")
+    .trim()
+    .min(1, "La descripción es obligatoria")
+    .max(500, "La descripción debe tener máximo 500 caracteres"),
+  dueDate: z
+    .string("La fecha límite es obligatoria")
+    .refine(isRealCalendarDate, "Ingresa una fecha válida"),
+});
+
+export type PlanInput = z.infer<typeof planSchema>;
+
 export function fieldErrors(error: z.ZodError): Record<string, string> {
   const result: Record<string, string> = {};
   for (const issue of error.issues) {

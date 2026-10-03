@@ -44,6 +44,14 @@ Creados por el seed (solo para pruebas; el seed se niega a correr con `NODE_ENV=
 
 `/` (landing), `/login`, `/register`, `/recover` y `/mis-planes` (requiere sesión).
 
+## Mis planes
+
+En `/mis-planes` (con sesión) la barra superior muestra la marca, el icono de perfil con tu nombre y el botón "Cerrar sesión". Con "Nuevo plan" se abre un formulario (solo descripción y fecha límite); al guardar, el plan aparece como tarjeta sin recargar y se conserva al refrescar. El ID del plan lo genera el backend (UUID) y la tarjeta muestra sus primeros 8 caracteres; la lista se ordena por fecha límite.
+
+API (requiere cookie de sesión): `GET /api/plans` y `POST /api/plans`.
+
+Pruebas unitarias (Vitest): `pnpm --filter backend test` y `pnpm --filter frontend test`.
+
 ## Base de datos: seed y migraciones manuales
 
 Estos comandos se ejecutan desde el host y necesitan que Prisma conozca la base de datos publicada en `localhost:5432`. Define `DATABASE_URL` (ver `.env.example`), por ejemplo en `apps/backend/.env`:
