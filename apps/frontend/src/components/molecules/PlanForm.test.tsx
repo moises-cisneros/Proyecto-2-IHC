@@ -17,10 +17,11 @@ describe("PlanForm", () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
-  it("only asks for description and due date (no plan ID field)", () => {
+  it("only asks for description, due date, and estado (no plan ID field)", () => {
     render(<PlanForm onSubmit={vi.fn()} onCancel={() => {}} />);
     expect(screen.getByLabelText("Descripción")).toBeInTheDocument();
     expect(screen.getByLabelText("Fecha límite")).toBeInTheDocument();
+    expect(screen.getByLabelText("Estado")).toBeInTheDocument();
     expect(screen.queryByLabelText("ID del plan")).not.toBeInTheDocument();
     expect(screen.getAllByRole("textbox")).toHaveLength(1);
   });
@@ -36,7 +37,7 @@ describe("PlanForm", () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
-  it("submits the trimmed payload when valid", async () => {
+  it("submits the trimmed payload when valid with default estado", async () => {
     const onSubmit = vi.fn().mockResolvedValue(ok);
     render(<PlanForm onSubmit={onSubmit} onCancel={() => {}} />);
     await userEvent.type(screen.getByLabelText("Descripción"), " Cena de grupo ");
@@ -46,6 +47,22 @@ describe("PlanForm", () => {
     expect(onSubmit).toHaveBeenCalledWith({
       description: "Cena de grupo",
       dueDate: "2026-12-24",
+      estado: "pendiente",
+    });
+  });
+
+  it("allows selecting a custom estado like 'hecho' or 'retrasado'", async () => {
+    const onSubmit = vi.fn().mockResolvedValue(ok);
+    render(<PlanForm onSubmit={onSubmit} onCancel={() => {}} />);
+    await userEvent.type(screen.getByLabelText("Descripción"), "Cena");
+    await userEvent.type(screen.getByLabelText("Fecha límite"), "2026-12-24");
+    await userEvent.selectOptions(screen.getByLabelText("Estado"), "hecho");
+    await userEvent.click(screen.getByRole("button", { name: "Crear plan" }));
+
+    expect(onSubmit).toHaveBeenCalledWith({
+      description: "Cena",
+      dueDate: "2026-12-24",
+      estado: "hecho",
     });
   });
 

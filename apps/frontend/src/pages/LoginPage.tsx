@@ -7,12 +7,19 @@ import { ErrorAlert, Field, FormCard, PrimaryButton, linkClass } from "../compon
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const COLOR_CYCLE = [
+  { name: "Rojo", bg: "#dc2626", text: "#ffffff" },
+  { name: "Amarillo", bg: "#facc15", text: "#1f1b2e" },
+  { name: "Verde", bg: "#16a34a", text: "#ffffff" },
+];
+
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname;
 
+  const [colorIndex, setColorIndex] = useState(0);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
@@ -64,6 +71,22 @@ export default function LoginPage() {
         <PrimaryButton type="submit" disabled={submitting}>
           {submitting ? "Entrando…" : "Entrar"}
         </PrimaryButton>
+
+        <div className="mt-m pt-m border-t border-border flex flex-col items-center gap-s">
+          <span className="text-caption text-text-muted">Botón de prueba:</span>
+          <button
+            type="button"
+            data-testid="color-test-button"
+            onClick={() => setColorIndex((prev) => (prev + 1) % COLOR_CYCLE.length)}
+            style={{
+              backgroundColor: COLOR_CYCLE[colorIndex].bg,
+              color: COLOR_CYCLE[colorIndex].text,
+            }}
+            className="w-full min-h-11 rounded-pill py-s font-semibold text-button transition-colors duration-200 cursor-pointer shadow-xs"
+          >
+            Color: {COLOR_CYCLE[colorIndex].name} (clic para cambiar)
+          </button>
+        </div>
       </form>
       <p className="mt-l text-body text-text-muted">
         <Link to="/recover" className={linkClass}>

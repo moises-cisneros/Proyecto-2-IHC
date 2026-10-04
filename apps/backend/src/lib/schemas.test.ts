@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { fieldErrors, planSchema } from "./schemas.js";
+import { fieldErrors, planSchema, updatePlanStatusSchema } from "./schemas.js";
 
-const valid = { description: "Cena de grupo", dueDate: "2026-12-24" };
+const valid = { description: "Cena de grupo", dueDate: "2026-12-24", estado: "pendiente" };
 
 describe("planSchema", () => {
   it("accepts valid input and trims whitespace", () => {
@@ -54,5 +54,42 @@ describe("planSchema", () => {
     const result = planSchema.safeParse({ ...valid, id: "evil", code: "PLAN-001" });
     expect(result.success).toBe(true);
     if (result.success) expect(result.data).toEqual(valid);
+  });
+
+  it("accepts valid estado values (hecho, retrasado, pendiente)", () => {
+    for (const estado of ["hecho", "retrasado", "pendiente"] as const) {
+      const result = planSchema.safeParse({ description: "Plan test", dueDate: "2026-12-24", estado });
+      expect(result.success).toBe(true);
+      if (result.success) expect(result.data.estado).toBe(estado);
+    }
+  });
+
+  it("defaults estado to pendiente when omitted", () => {
+    const result = planSchema.safeParse({ description: "Plan test", dueDate: "2026-12-24" });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.estado).toBe("pendiente");
+  });
+
+  it("rejects invalid estado values", () => {
+    const result = planSchema.safeParse({ ...valid, estado: "archivado" });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(fieldErrors(result.error)).toHaveProperty("estado");
+    }
+  });
+});
+
+describe("updatePlanStatusSchema", () => {
+  it("accepts valid estado transitions", () => {
+    for (const estado of ["hecho", "retrasado", "pendiente"] as const) {
+      const result = updatePlanStatusSchema.safeParse({ estado });
+      expect(result.success).toBe(true);
+      if (result.success) expect(result.data.estado).toBe(estado);
+    }
+  });
+
+  it("rejects invalid or missing estado", () => {
+    expect(updatePlanStatusSchema.safeParse({}).success).toBe(false);
+    expect(updatePlanStatusSchema.safeParse({ estado: "invalido" }).success).toBe(false);
   });
 });

@@ -33,9 +33,16 @@ function createMemoryStore(): PlansStore {
         userId,
         description: data.description,
         dueDate: new Date(`${data.dueDate}T00:00:00.000Z`),
+        estado: data.estado ?? "pendiente",
         createdAt: new Date(Date.UTC(2026, 0, 1, 0, 0, counter)),
       };
       rows.push(row);
+      return row;
+    },
+    async updateStatus(userId, planId, estado) {
+      const row = rows.find((r) => r.id === planId && r.userId === userId);
+      if (!row) return null;
+      row.estado = estado;
       return row;
     },
   };
@@ -140,5 +147,82 @@ describe("plans router", () => {
       "early-second",
       "late",
     ]);
+  });
+
+  it("stores and serializes estado with default 'pendiente'", async () => {
+    const res = await request(app).post("/api/plans").set("Cookie", cookieFor("u1")).send(body);
+    expect(res.status).toBe(201);
+    expect(res.body.plan.estado).toBe("pendiente");
+  });
+
+  it("stores and serializes custom estado ('hecho', 'retrasado')", async () => {
+    const hechoRes = await request(app)
+      .post("/api/plans")
+      .set("Cookie", cookieFor("u1"))
+      .send({ ...body, estado: "hecho" });
+    expect(hechoRes.status).toBe(201);
+    expect(hechoRes.body.plan.estado).toBe("hecho");
+
+    const retrasadoRes = await request(app)
+      .post("/api/plans")
+      .set("Cookie", cookieFor("u1"))
+      .send({ ...body, estado: "retrasado" });
+    expect(retrasadoRes.status).toBe(201);
+    expect(retrasadoRes.body.plan.estado).toBe("retrasado");
+  });
+
+  describe("PATCH /api/plans/:id", () => {
+    it("updates plan estado to 'hecho' and 'retrasado'", async () => {
+      const created = await request(app).post("/api/plans").set("Cookie", cookieFor("u1")).send(body);
+      const planId = created.body.plan.id;
+
+      const patchRes = await request(app)
+        .patch(`/api/plans/${planId}`)
+        .set("Cookie", cookieFor("u1"))
+        .send({ estado: "hecho" });
+      expect(patchRes.status).toBe(200);
+      expect(patchRes.body.plan.estado).toBe("hecho");
+
+      const patchRes2 = await request(app)
+        .patch(`/api/plans/${planId}`)
+        .set("Cookie", cookieFor("u1"))
+        .send({ estado: "retrasado" });
+      expect(patchRes2.status).toBe(200);
+      expect(patchRes2.body.plan.estado).toBe("retrasado");
+    });
+
+    it("rejects invalid estado with 400", async () => {
+      const created = await request(app).post("/api/plans").set("Cookie", cookieFor("u1")).send(body);
+      const planId = created.body.plan.id;
+
+      const res = await request(app)
+        .patch(`/api/plans/${planId}`)
+        .set("Cookie", cookieFor("u1"))
+        .send({ estado: "cancelado" });
+      expect(res.status).toBe(400);
+      expect(res.body.errors).toHaveProperty("estado");
+    });
+
+    it("returns 404 if plan does not exist or belongs to another user", async () => {
+      const created = await request(app).post("/api/plans").set("Cookie", cookieFor("u1")).send(body);
+      const planId = created.body.plan.id;
+
+      const otherUserRes = await request(app)
+        .patch(`/api/plans/${planId}`)
+        .set("Cookie", cookieFor("u2"))
+        .send({ estado: "hecho" });
+      expect(otherUserRes.status).toBe(404);
+
+      const notFoundRes = await request(app)
+        .patch(`/api/plans/00000000-0000-0000-0000-000000000000`)
+        .set("Cookie", cookieFor("u1"))
+        .send({ estado: "hecho" });
+      expect(notFoundRes.status).toBe(404);
+    });
+
+    it("requires authentication returning 401 without cookie", async () => {
+      const res = await request(app).patch("/api/plans/fake-id").send({ estado: "hecho" });
+      expect(res.status).toBe(401);
+    });
   });
 });

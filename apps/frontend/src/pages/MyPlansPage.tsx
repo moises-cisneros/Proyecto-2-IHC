@@ -9,7 +9,7 @@ import { usePlans } from "../hooks/usePlans";
 
 export default function MyPlansPage() {
   const { user } = useAuth();
-  const { plans, loading, loadError, addPlan } = usePlans();
+  const { plans, loading, loadError, addPlan, updatePlanStatus } = usePlans();
   const [formOpen, setFormOpen] = useState(false);
   const [created, setCreated] = useState(false);
 
@@ -44,7 +44,7 @@ export default function MyPlansPage() {
             Cargando tus planes…
           </p>
         ) : (
-          <PlanList plans={plans} />
+          <PlanList plans={plans} onStatusChange={updatePlanStatus} />
         )}
       </div>
     </>

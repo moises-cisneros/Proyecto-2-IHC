@@ -21,6 +21,7 @@ const saved: Plan = {
   id: "3f2a9c1e-7b4d-4e8a-9c21-5d6e7f8a9b0c",
   description: "Cena de grupo",
   dueDate: "2026-12-24",
+  estado: "pendiente",
   createdAt: "2026-01-01T00:00:00.000Z",
 };
 
@@ -63,6 +64,7 @@ describe("MyPlansPage", () => {
     expect(createPlan).toHaveBeenCalledWith({
       description: "Cena de grupo",
       dueDate: "2026-12-24",
+      estado: "pendiente",
     });
     expect(listPlans).toHaveBeenCalledTimes(1);
   });
