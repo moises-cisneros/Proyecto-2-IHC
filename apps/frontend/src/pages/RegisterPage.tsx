@@ -1,9 +1,18 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { LoaderCircle, Lock, Mail, User, UserPlus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { ApiError } from "../api/client";
-import { ErrorAlert, Field, FormCard, PrimaryButton, linkClass } from "../components/ui";
+import { Button } from "@/components/ui/button";
+import {
+  AuthDialog,
+  AuthFooter,
+  ErrorAlert,
+  Field,
+  TextLink,
+} from "../components/domain";
+
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -51,12 +60,17 @@ export default function RegisterPage() {
   }
 
   return (
-    <FormCard title="Crear cuenta">
-      <form onSubmit={handleSubmit} noValidate>
+    <AuthDialog
+      title="Crear cuenta"
+      description="Regístrate y empieza a organizar planes con tu grupo."
+      icon={UserPlus}
+    >
+      <form onSubmit={handleSubmit} noValidate className="grid gap-4">
         <ErrorAlert message={formError} />
         <Field
           id="name"
           label="Nombre"
+          icon={User}
           autoComplete="name"
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -66,6 +80,7 @@ export default function RegisterPage() {
           id="email"
           label="Correo electrónico"
           type="email"
+          icon={Mail}
           autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -75,21 +90,21 @@ export default function RegisterPage() {
           id="password"
           label="Contraseña (mínimo 8 caracteres)"
           type="password"
+          icon={Lock}
           autoComplete="new-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           error={errors.password}
         />
-        <PrimaryButton type="submit" disabled={submitting}>
+        <Button type="submit" size="lg" disabled={submitting} className="mt-1 w-full">
+          {submitting ? <LoaderCircle aria-hidden="true" className="animate-spin" /> : null}
           {submitting ? "Creando…" : "Crear cuenta"}
-        </PrimaryButton>
+        </Button>
       </form>
-      <p className="mt-l text-body text-text-muted">
-        ¿Ya tienes cuenta?{" "}
-        <Link to="/login" className={linkClass}>
-          Iniciar sesión
-        </Link>
-      </p>
-    </FormCard>
+      <AuthFooter>
+        <span>¿Ya tienes cuenta?</span>
+        <TextLink to="/login">Iniciar sesión</TextLink>
+      </AuthFooter>
+    </AuthDialog>
   );
 }

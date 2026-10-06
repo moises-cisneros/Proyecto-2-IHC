@@ -93,3 +93,4 @@ describe("updatePlanStatusSchema", () => {
     expect(updatePlanStatusSchema.safeParse({ estado: "invalido" }).success).toBe(false);
   });
 });
+

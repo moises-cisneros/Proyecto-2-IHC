@@ -1,26 +1,32 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { ArrowLeft, KeyRound, LoaderCircle, Lock, Mail, ShieldCheck } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
 import { ApiError, api } from "../api/client";
+import { Button } from "@/components/ui/button";
 import {
+  AuthDialog,
+  AuthFooter,
   ErrorAlert,
   Field,
-  FormCard,
-  PrimaryButton,
   SuccessNotice,
-  linkClass,
-} from "../components/ui";
+  TextLink,
+} from "../components/domain";
+
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type Step = "request" | "confirm" | "done";
 
 export default function RecoverPage() {
-  const [step, setStep] = useState<Step>("request");
-  const [email, setEmail] = useState("");
-  const [token, setToken] = useState("");
+  const [searchParams] = useSearchParams();
+  const tokenFromUrl = searchParams.get("token") || "";
+  const emailFromUrl = searchParams.get("email") || "";
+
+  const [step, setStep] = useState<Step>(tokenFromUrl && emailFromUrl ? "confirm" : "request");
+  const [email, setEmail] = useState(emailFromUrl);
+  const [token, setToken] = useState(tokenFromUrl);
   const [newPassword, setNewPassword] = useState("");
-  const [simulatedToken, setSimulatedToken] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ email?: string; token?: string; newPassword?: string }>(
     {},
   );
@@ -37,8 +43,7 @@ export default function RecoverPage() {
     setErrors({});
     setSubmitting(true);
     try {
-      const data = await api.recover(email.trim());
-      setSimulatedToken(data.token ?? null);
+      await api.recover(email.trim());
       setStep("confirm");
     } catch (error) {
       setFormError(error instanceof ApiError ? error.message : "No se pudo solicitar el token.");
@@ -69,37 +74,46 @@ export default function RecoverPage() {
     }
   }
 
+  const backToLogin = (
+    <AuthFooter>
+      <TextLink to="/login" className="inline-flex items-center gap-1.5">
+        <ArrowLeft aria-hidden="true" className="size-4" />
+        Volver a iniciar sesión
+      </TextLink>
+    </AuthFooter>
+  );
+
   if (step === "done") {
     return (
-      <FormCard title="Recuperar contraseña">
+      <AuthDialog
+        title="Contraseña actualizada"
+        description="Ya puedes entrar con tu nueva contraseña."
+        icon={ShieldCheck}
+      >
         <SuccessNotice>Tu contraseña se actualizó correctamente.</SuccessNotice>
-        <Link to="/login" className={linkClass}>
-          Ir a iniciar sesión
-        </Link>
-      </FormCard>
+        <Button asChild size="lg" className="w-full">
+          <Link to="/login">Ir a iniciar sesión</Link>
+        </Button>
+      </AuthDialog>
     );
   }
 
   if (step === "confirm") {
     return (
-      <FormCard title="Recuperar contraseña">
+      <AuthDialog
+        title="Nueva contraseña"
+        description="Ingresa el token de recuperación y elige tu nueva contraseña."
+        icon={KeyRound}
+      >
         <SuccessNotice>
-          {simulatedToken ? (
-            <>
-              <strong>Token:</strong>{" "}
-              <code data-testid="simulated-token" className="break-all">
-                {simulatedToken}
-              </code>
-            </>
-          ) : (
-            "Si el correo existe, se generó un token de recuperación."
-          )}
+          Si el correo existe, se generó un token de recuperación y te lo enviamos por email.
         </SuccessNotice>
-        <form onSubmit={handleConfirm} noValidate>
+        <form onSubmit={handleConfirm} noValidate className="grid gap-4">
           <ErrorAlert message={formError} />
           <Field
             id="token"
             label="Token de recuperación"
+            icon={KeyRound}
             value={token}
             onChange={(e) => setToken(e.target.value)}
             error={errors.token}
@@ -108,41 +122,46 @@ export default function RecoverPage() {
             id="newPassword"
             label="Nueva contraseña (mínimo 8 caracteres)"
             type="password"
+            icon={Lock}
             autoComplete="new-password"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             error={errors.newPassword}
           />
-          <PrimaryButton type="submit" disabled={submitting}>
+          <Button type="submit" size="lg" disabled={submitting} className="mt-1 w-full">
+            {submitting ? <LoaderCircle aria-hidden="true" className="animate-spin" /> : null}
             {submitting ? "Guardando…" : "Cambiar contraseña"}
-          </PrimaryButton>
+          </Button>
         </form>
-      </FormCard>
+        {backToLogin}
+      </AuthDialog>
     );
   }
 
   return (
-    <FormCard title="Recuperar contraseña">
-      <form onSubmit={handleRequest} noValidate>
+    <AuthDialog
+      title="Recuperar contraseña"
+      description="Te enviaremos un token para que puedas crear una nueva."
+      icon={KeyRound}
+    >
+      <form onSubmit={handleRequest} noValidate className="grid gap-4">
         <ErrorAlert message={formError} />
         <Field
           id="email"
           label="Correo electrónico"
           type="email"
+          icon={Mail}
           autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           error={errors.email}
         />
-        <PrimaryButton type="submit" disabled={submitting}>
+        <Button type="submit" size="lg" disabled={submitting} className="mt-1 w-full">
+          {submitting ? <LoaderCircle aria-hidden="true" className="animate-spin" /> : null}
           {submitting ? "Solicitando…" : "Solicitar token"}
-        </PrimaryButton>
+        </Button>
       </form>
-      <p className="mt-l text-body text-text-muted">
-        <Link to="/login" className={linkClass}>
-          Volver a iniciar sesión
-        </Link>
-      </p>
-    </FormCard>
+      {backToLogin}
+    </AuthDialog>
   );
 }

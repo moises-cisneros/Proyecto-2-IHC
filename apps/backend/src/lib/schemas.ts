@@ -42,31 +42,28 @@ function isRealCalendarDate(value: string): boolean {
 export const planStatusValues = ["hecho", "retrasado", "pendiente"] as const;
 export type PlanStatus = (typeof planStatusValues)[number];
 
+export const planStatusSchema = z.enum(planStatusValues, {
+  message: "El estado debe ser uno de: hecho, retrasado, pendiente",
+});
+
+export const updatePlanStatusSchema = z.object({
+  estado: planStatusSchema,
+});
+export type UpdatePlanStatusInput = z.infer<typeof updatePlanStatusSchema>;
+
 export const planSchema = z.object({
   description: z
-    .string({ message: "La descripción es obligatoria" })
+    .string("La descripción es obligatoria")
     .trim()
     .min(1, "La descripción es obligatoria")
     .max(500, "La descripción debe tener máximo 500 caracteres"),
   dueDate: z
-    .string({ message: "La fecha límite es obligatoria" })
+    .string("La fecha límite es obligatoria")
     .refine(isRealCalendarDate, "Ingresa una fecha válida"),
-  estado: z
-    .enum(planStatusValues, {
-      message: "El estado debe ser 'hecho', 'retrasado' o 'pendiente'",
-    })
-    .default("pendiente"),
+  estado: planStatusSchema.optional().default("pendiente"),
 });
 
 export type PlanInput = z.infer<typeof planSchema>;
-
-export const updatePlanStatusSchema = z.object({
-  estado: z.enum(planStatusValues, {
-    message: "El estado debe ser 'hecho', 'retrasado' o 'pendiente'",
-  }),
-});
-
-export type UpdatePlanStatusInput = z.infer<typeof updatePlanStatusSchema>;
 
 export function fieldErrors(error: z.ZodError): Record<string, string> {
   const result: Record<string, string> = {};

@@ -15,6 +15,7 @@ export default function App() {
         <Route path="/register" element={<RegisterPage />} />
       </Route>
       <Route path="/recover" element={<RecoverPage />} />
+      <Route path="/recover/confirm" element={<RecoverPage />} />
       <Route element={<ProtectedRoute />}>
         <Route path="/mis-planes" element={<MyPlansPage />} />
       </Route>

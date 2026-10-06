@@ -1,68 +1,17 @@
 import { Router, type NextFunction, type Request, type Response } from "express";
 import type { User } from "@prisma/client";
-import { prisma } from "../lib/prisma.js";
 import {
   fieldErrors,
   planSchema,
   updatePlanStatusSchema,
-  type PlanInput,
-  type PlanStatus,
 } from "../lib/schemas.js";
+import {
+  type StoredPlan,
+  type PlansStore,
+  createPrismaPlansStore,
+} from "../services/plans.service.js";
 
-export interface StoredPlan {
-  id: string;
-  description: string;
-  dueDate: Date;
-  estado: string;
-  createdAt: Date;
-}
-
-export interface PlansStore {
-  list(userId: string): Promise<StoredPlan[]>;
-  /** The store generates the plan id. */
-  create(userId: string, data: PlanInput): Promise<StoredPlan>;
-  updateStatus(userId: string, planId: string, estado: PlanStatus): Promise<StoredPlan | null>;
-  delete(userId: string, planId: string): Promise<boolean>;
-}
-
-export function createPrismaPlansStore(): PlansStore {
-  return {
-    list: (userId) =>
-      prisma.plan.findMany({
-        where: { userId },
-        orderBy: [{ dueDate: "asc" }, { createdAt: "asc" }],
-        select: { id: true, description: true, dueDate: true, estado: true, createdAt: true },
-      }),
-    create: (userId, data) =>
-      prisma.plan.create({
-        data: {
-          userId,
-          description: data.description,
-          dueDate: new Date(`${data.dueDate}T00:00:00.000Z`),
-          estado: data.estado ?? "pendiente",
-        },
-        select: { id: true, description: true, dueDate: true, estado: true, createdAt: true },
-      }),
-    updateStatus: async (userId, planId, estado) => {
-      const existing = await prisma.plan.findFirst({
-        where: { id: planId, userId },
-        select: { id: true },
-      });
-      if (!existing) return null;
-      return prisma.plan.update({
-        where: { id: planId },
-        data: { estado },
-        select: { id: true, description: true, dueDate: true, estado: true, createdAt: true },
-      });
-    },
-    delete: async (userId, planId) => {
-      const result = await prisma.plan.deleteMany({
-        where: { id: planId, userId },
-      });
-      return result.count > 0;
-    },
-  };
-}
+export { type StoredPlan, type PlansStore, createPrismaPlansStore };
 
 const toDateString = (date: Date) => date.toISOString().slice(0, 10);
 
@@ -122,8 +71,8 @@ export function createPlansRouter(store: PlansStore): Router {
         res.status(400).json({ message: "Datos inválidos", errors: fieldErrors(parsed.error) });
         return;
       }
-      const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-      const updated = await store.updateStatus(user.id, id, parsed.data.estado);
+      const planId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+      const updated = await store.updateStatus(user.id, planId, parsed.data.estado);
       if (!updated) {
         res.status(404).json({ message: "Plan no encontrado" });
         return;
@@ -136,8 +85,8 @@ export function createPlansRouter(store: PlansStore): Router {
     "/:id",
     wrap(async (req, res) => {
       const user = res.locals.user as User;
-      const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-      const deleted = await store.delete(user.id, id);
+      const planId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+      const deleted = await store.delete(user.id, planId);
       if (!deleted) {
         res.status(404).json({ message: "Plan no encontrado" });
         return;

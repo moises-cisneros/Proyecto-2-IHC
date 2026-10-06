@@ -5,7 +5,7 @@ export interface PublicUser {
   createdAt: string;
 }
 
-export type PlanStatus = "hecho" | "retrasado" | "pendiente";
+export type PlanStatus = "pendiente" | "hecho" | "retrasado";
 
 export interface Plan {
   id: string;
