@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api/client";
@@ -11,7 +11,7 @@ vi.mock("../auth/AuthContext", () => ({
 
 vi.mock("../api/client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../api/client")>();
-  return { ...actual, api: { listPlans: vi.fn(), createPlan: vi.fn(), updatePlanStatus: vi.fn() } };
+  return { ...actual, api: { listPlans: vi.fn(), createPlan: vi.fn(), confirmPlan: vi.fn(), deletePlan: vi.fn() } };
 });
 
 const listPlans = vi.mocked(api.listPlans);
@@ -21,7 +21,7 @@ const saved: Plan = {
   id: "3f2a9c1e-7b4d-4e8a-9c21-5d6e7f8a9b0c",
   description: "Cena de grupo",
   dueDate: "2026-12-24",
-  estado: "pendiente",
+  estado: "borrador",
   createdAt: "2026-01-01T00:00:00.000Z",
 };
 
@@ -64,7 +64,6 @@ describe("MyPlansPage", () => {
     expect(createPlan).toHaveBeenCalledWith({
       description: "Cena de grupo",
       dueDate: "2026-12-24",
-      estado: "pendiente",
     });
     expect(listPlans).toHaveBeenCalledTimes(1);
   });
@@ -79,17 +78,58 @@ describe("MyPlansPage", () => {
     expect(await screen.findByRole("article")).toHaveTextContent("Cena de grupo");
   });
 
-  it("allows changing status on a rendered card and persists the change", async () => {
+  it("confirms a draft through the dialog and shows the confirmed badge", async () => {
     listPlans.mockResolvedValue({ plans: [saved] });
-    const updateMock = vi.mocked(api.updatePlanStatus);
-    updateMock.mockResolvedValue({ plan: { ...saved, estado: "hecho" } });
+    const confirmMock = vi.mocked(api.confirmPlan);
+    confirmMock.mockResolvedValue({ plan: { ...saved, estado: "confirmado" } });
 
     render(<MyPlansPage />);
-    const badge = await screen.findByTestId("plan-status-badge");
-    expect(badge).toHaveValue("pendiente");
+    expect(await screen.findByTestId("plan-status-badge")).toHaveTextContent("Borrador");
 
-    await userEvent.selectOptions(badge, "hecho");
-    expect(updateMock).toHaveBeenCalledWith(saved.id, "hecho");
+    await userEvent.click(screen.getByRole("button", { name: "Confirmar plan" }));
+    expect(confirmMock).not.toHaveBeenCalled();
+    await userEvent.click(
+      within(screen.getByRole("alertdialog")).getByRole("button", { name: "Confirmar" }),
+    );
+
+    expect(confirmMock).toHaveBeenCalledWith(saved.id);
+    await waitFor(() =>
+      expect(screen.getByTestId("plan-status-badge")).toHaveTextContent("Confirmado"),
+    );
+    expect(screen.queryByRole("button", { name: "Confirmar plan" })).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Plan confirmado");
+  });
+
+  it("shows an error and keeps the draft when confirming fails", async () => {
+    listPlans.mockResolvedValue({ plans: [saved] });
+    const { ApiError } = await import("../api/client");
+    vi.mocked(api.confirmPlan).mockRejectedValue(new ApiError(409, "El plan ya está confirmado"));
+
+    render(<MyPlansPage />);
+    await userEvent.click(await screen.findByRole("button", { name: "Confirmar plan" }));
+    await userEvent.click(
+      within(screen.getByRole("alertdialog")).getByRole("button", { name: "Confirmar" }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("El plan ya está confirmado");
+    expect(screen.getByTestId("plan-status-badge")).toHaveTextContent("Borrador");
+  });
+
+  it("deletes a plan from the actions menu after confirmation", async () => {
+    listPlans.mockResolvedValue({ plans: [saved] });
+    const deleteMock = vi.mocked(api.deletePlan);
+    deleteMock.mockResolvedValue({ message: "Plan eliminado" });
+
+    render(<MyPlansPage />);
+    await userEvent.click(await screen.findByRole("button", { name: "Más acciones" }));
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Eliminar" }));
+    const dialog = await screen.findByRole("alertdialog");
+    expect(dialog).toHaveTextContent("Cena de grupo");
+    expect(deleteMock).not.toHaveBeenCalled();
+    await userEvent.click(within(dialog).getByRole("button", { name: "Eliminar" }));
+
+    expect(deleteMock).toHaveBeenCalledWith(saved.id);
+    await waitFor(() => expect(screen.queryByRole("article")).not.toBeInTheDocument());
   });
 
   it("keeps the form open with an error when the server rejects the plan", async () => {

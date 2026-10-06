@@ -17,6 +17,20 @@ describe("Navbar", () => {
     expect(screen.getByRole("link", { name: "Planazo" })).toBeInTheDocument();
   });
 
+  it("makes the mark and brand name one single link to /mis-planes", () => {
+    renderNavbar();
+    const brand = screen.getByRole("link", { name: "Planazo" });
+    expect(brand).toHaveAttribute("href", "/mis-planes");
+    expect(brand).toHaveTextContent("Planazo");
+  });
+
+  it("has no second link to the same destination", () => {
+    renderNavbar();
+    const links = screen.getAllByRole("link");
+    expect(links.filter((link) => link.getAttribute("href") === "/mis-planes")).toHaveLength(1);
+    expect(screen.queryByRole("link", { name: "Mis planes" })).not.toBeInTheDocument();
+  });
+
   it("exposes the user name in the profile icon accessible name", () => {
     renderNavbar({ name: "Ana Pérez" });
     expect(screen.getByRole("img", { name: "Perfil de Ana Pérez" })).toBeInTheDocument();

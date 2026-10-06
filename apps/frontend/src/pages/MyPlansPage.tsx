@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { CalendarClock, ListChecks, Plus, TriangleAlert } from "lucide-react";
-import type { PlanInput, PlanStatus } from "../api/client";
+import type { PlanInput } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,9 +16,9 @@ import { daysUntil, getDueStatus } from "../lib/plans";
 
 export default function MyPlansPage() {
   const { user } = useAuth();
-  const { plans, loading, loadError, addPlan, updatePlanStatus, deletePlan } = usePlans();
+  const { plans, loading, loadError, addPlan, confirmPlan, deletePlan } = usePlans();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [created, setCreated] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   async function handleSubmit(input: PlanInput) {
@@ -26,31 +26,30 @@ export default function MyPlansPage() {
     const result = await addPlan(input);
     if (result.ok) {
       setDialogOpen(false);
-      setCreated(true);
+      setNotice("Plan creado correctamente.");
     }
     return result;
   }
 
   function openDialog() {
-    setCreated(false);
+    setNotice(null);
     setDialogOpen(true);
   }
 
-  async function handleStatusChange(id: string, estado: PlanStatus) {
-    const targetPlan = plans.find((p) => p.id === id);
-    if (targetPlan?.estado === "hecho" && estado === "hecho") {
-      setActionError("Esta acción ya fue confirmada.");
-      return;
-    }
+  async function handleConfirm(id: string) {
+    setNotice(null);
     setActionError(null);
-    const result = await updatePlanStatus(id, estado);
-    if (!result.ok) setActionError(result.message);
+    const result = await confirmPlan(id);
+    if (result.ok) setNotice("Plan confirmado correctamente.");
+    else setActionError(result.message);
   }
 
   async function handleDelete(id: string) {
+    setNotice(null);
     setActionError(null);
     const result = await deletePlan(id);
-    if (!result.ok) setActionError(result.message);
+    if (result.ok) setNotice("Plan eliminado correctamente.");
+    else setActionError(result.message);
   }
 
   const nextPlan = plans.find((plan) => daysUntil(plan.dueDate) >= 0);
@@ -71,7 +70,9 @@ export default function MyPlansPage() {
         </Button>
       </header>
 
-      {created ? <SuccessNotice>Plan creado correctamente.</SuccessNotice> : null}
+      {notice ? (
+        <SuccessNotice onClose={() => setNotice(null)}>{notice}</SuccessNotice>
+      ) : null}
       <ErrorAlert message={loadError || actionError} />
 
       {loading ? (
@@ -100,7 +101,7 @@ export default function MyPlansPage() {
           <PlanList
             plans={plans}
             onCreate={openDialog}
-            onStatusChange={handleStatusChange}
+            onConfirm={handleConfirm}
             onDelete={handleDelete}
           />
         </>

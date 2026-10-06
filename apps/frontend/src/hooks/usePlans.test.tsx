@@ -12,7 +12,7 @@ vi.mock("../api/client", async (importOriginal) => {
     api: {
       listPlans: vi.fn(),
       createPlan: vi.fn(),
-      updatePlanStatus: vi.fn(),
+      confirmPlan: vi.fn(),
       deletePlan: vi.fn(),
     },
   };
@@ -22,13 +22,13 @@ const plan = (name: string, dueDate: string, createdAt: string): Plan => ({
   id: `3f2a9c1e-0000-4000-8000-${name.padStart(12, "0")}`,
   description: `Descripción ${name}`,
   dueDate,
-  estado: "pendiente",
+  estado: "borrador",
   createdAt,
 });
 
 const listPlans = vi.mocked(api.listPlans);
 const createPlan = vi.mocked(api.createPlan);
-const updatePlanStatusMock = vi.mocked(api.updatePlanStatus);
+const confirmPlanMock = vi.mocked(api.confirmPlan);
 const deletePlanMock = vi.mocked(api.deletePlan);
 
 describe("usePlans", () => {
@@ -89,38 +89,39 @@ describe("usePlans", () => {
     expect(result.current.plans).toEqual([]);
   });
 
-  it("updates plan status in place on success", async () => {
+  it("marks the plan as confirmado from the server response", async () => {
     const existing = plan("A", "2026-05-01", "2026-01-01T00:00:00.000Z");
     listPlans.mockResolvedValue({ plans: [existing] });
-    updatePlanStatusMock.mockResolvedValue({ plan: { ...existing, estado: "hecho" } });
+    confirmPlanMock.mockResolvedValue({ plan: { ...existing, estado: "confirmado" } });
 
     const { result } = renderHook(() => usePlans());
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    let outcome: Awaited<ReturnType<typeof result.current.updatePlanStatus>> | undefined;
+    let outcome: Awaited<ReturnType<typeof result.current.confirmPlan>> | undefined;
     await act(async () => {
-      outcome = await result.current.updatePlanStatus(existing.id, "hecho");
+      outcome = await result.current.confirmPlan(existing.id);
     });
 
+    expect(confirmPlanMock).toHaveBeenCalledWith(existing.id);
     expect(outcome).toEqual({ ok: true });
-    expect(result.current.plans[0].estado).toBe("hecho");
+    expect(result.current.plans[0].estado).toBe("confirmado");
   });
 
-  it("returns error message and retains previous status on failure", async () => {
+  it("returns the error message and keeps borrador when confirming fails", async () => {
     const existing = plan("A", "2026-05-01", "2026-01-01T00:00:00.000Z");
     listPlans.mockResolvedValue({ plans: [existing] });
-    updatePlanStatusMock.mockRejectedValue(new ApiError(400, "Error al actualizar"));
+    confirmPlanMock.mockRejectedValue(new ApiError(409, "El plan ya está confirmado"));
 
     const { result } = renderHook(() => usePlans());
     await waitFor(() => expect(result.current.loading).toBe(false));
 
-    let outcome: Awaited<ReturnType<typeof result.current.updatePlanStatus>> | undefined;
+    let outcome: Awaited<ReturnType<typeof result.current.confirmPlan>> | undefined;
     await act(async () => {
-      outcome = await result.current.updatePlanStatus(existing.id, "retrasado");
+      outcome = await result.current.confirmPlan(existing.id);
     });
 
-    expect(outcome).toEqual({ ok: false, message: "Error al actualizar" });
-    expect(result.current.plans[0].estado).toBe("pendiente");
+    expect(outcome).toEqual({ ok: false, message: "El plan ya está confirmado" });
+    expect(result.current.plans[0].estado).toBe("borrador");
   });
 
   it("removes plan from state on successful deletion", async () => {

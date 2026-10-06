@@ -1,7 +1,6 @@
-import { CalendarDays, LogOut } from "lucide-react";
-import { Link, NavLink } from "react-router-dom";
+import { LogOut } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { Logo } from "./Logo";
 import { ProfileMenu } from "./ProfileMenu";
 
@@ -26,20 +25,6 @@ export function Navbar({ name, onLogout, pending = false }: NavbarProps) {
           >
             <Logo />
           </Link>
-          <NavLink
-            to="/mis-planes"
-            className={({ isActive }) =>
-              cn(
-                "relative inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-semibold outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50",
-                isActive
-                  ? "text-foreground after:absolute after:inset-x-3 after:-bottom-2.5 after:h-0.5 after:rounded-full after:bg-primary"
-                  : "text-muted-foreground hover:text-foreground",
-              )
-            }
-          >
-            <CalendarDays aria-hidden="true" className="size-4" />
-            <span className="max-sm:sr-only">Mis planes</span>
-          </NavLink>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
           <ProfileMenu name={name} />

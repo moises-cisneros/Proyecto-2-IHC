@@ -1,6 +1,7 @@
 export * from "./AppShell";
 export * from "./AuthDialog";
 export * from "./Avatar";
+export * from "./ConfirmDialog";
 export * from "./Field";
 export * from "./LandingScreen";
 export * from "./LoadingScreen";

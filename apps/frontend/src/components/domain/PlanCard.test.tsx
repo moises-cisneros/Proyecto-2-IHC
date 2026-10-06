@@ -1,158 +1,135 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import type { Plan, PlanStatus } from "../../api/client";
-import { PlanCard, STATUS_CONFIG } from "./PlanCard";
+import type { Plan } from "../../api/client";
+import { PlanCard } from "./PlanCard";
 
 const basePlan: Plan = {
   id: "3f2a9c1e-7b4d-4e8a-9c21-5d6e7f8a9b0c",
   description: "Cena de equipo",
   dueDate: "2026-12-24",
-  estado: "pendiente",
+  estado: "borrador",
   createdAt: "2026-01-01T00:00:00.000Z",
 };
+const confirmed: Plan = { ...basePlan, estado: "confirmado" };
 
-describe("PlanCard - status badge", () => {
-  it("renders 'hecho' with green styling and accessible label", () => {
-    const plan: Plan = { ...basePlan, estado: "hecho" };
-    render(<PlanCard plan={plan} />);
+async function openMenu() {
+  await userEvent.click(screen.getByRole("button", { name: "Más acciones" }));
+}
 
-    const badge = screen.getByTestId("plan-status-badge");
-    expect(badge).toBeInTheDocument();
-    expect(badge).toHaveValue("hecho");
-    expect(badge).toHaveAttribute("aria-label", "Estado: Hecho");
-    expect(badge).toHaveAttribute("data-status", "hecho");
-    expect(badge).toHaveStyle({
-      backgroundColor: "rgb(220, 252, 231)",
-      color: "rgb(22, 101, 52)",
-    });
+describe("PlanCard - state", () => {
+  it("shows a text 'Borrador' badge and the confirm button for a draft", () => {
+    render(<PlanCard plan={basePlan} />);
+    expect(screen.getByTestId("plan-status-badge")).toHaveTextContent("Borrador");
+    expect(screen.getByTestId("plan-status-badge")).toHaveAttribute("data-status", "borrador");
+    expect(screen.getByRole("button", { name: "Confirmar plan" })).toBeInTheDocument();
   });
 
-  it("renders 'retrasado' with red styling and accessible label", () => {
-    const plan: Plan = { ...basePlan, estado: "retrasado" };
-    render(<PlanCard plan={plan} />);
-
+  it("shows a 'Confirmado' badge with a check icon and no confirm button", () => {
+    render(<PlanCard plan={confirmed} />);
     const badge = screen.getByTestId("plan-status-badge");
-    expect(badge).toBeInTheDocument();
-    expect(badge).toHaveValue("retrasado");
-    expect(badge).toHaveAttribute("aria-label", "Estado: Retrasado");
-    expect(badge).toHaveAttribute("data-status", "retrasado");
-    expect(badge).toHaveStyle({
-      backgroundColor: "rgb(255, 228, 230)",
-      color: "rgb(159, 18, 57)",
-    });
+    expect(badge).toHaveTextContent("Confirmado");
+    expect(badge.querySelector("svg")).not.toBeNull();
+    expect(screen.queryByRole("button", { name: "Confirmar plan" })).not.toBeInTheDocument();
   });
 
-  it("renders 'pendiente' with blue styling and accessible label", () => {
-    const plan: Plan = { ...basePlan, estado: "pendiente" };
-    render(<PlanCard plan={plan} />);
-
-    const badge = screen.getByTestId("plan-status-badge");
-    expect(badge).toBeInTheDocument();
-    expect(badge).toHaveValue("pendiente");
-    expect(badge).toHaveAttribute("aria-label", "Estado: Pendiente");
-    expect(badge).toHaveAttribute("data-status", "pendiente");
-    expect(badge).toHaveStyle({
-      backgroundColor: "rgb(224, 242, 254)",
-      color: "rgb(7, 89, 133)",
-    });
-  });
-
-  it("defaults to 'pendiente' when estado is undefined", () => {
-    const plan = { ...basePlan, estado: undefined as unknown as PlanStatus };
-    render(<PlanCard plan={plan} />);
-
-    const badge = screen.getByTestId("plan-status-badge");
-    expect(badge).toBeInTheDocument();
-    expect(badge).toHaveValue("pendiente");
-    expect(badge).toHaveAttribute("aria-label", "Estado: Pendiente");
-    expect(badge).toHaveStyle({
-      backgroundColor: "rgb(224, 242, 254)",
-      color: "rgb(7, 89, 133)",
-    });
+  it("does not render a state select", () => {
+    render(<PlanCard plan={basePlan} />);
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
   });
 });
 
-describe("PlanCard - interactive status change", () => {
-  it("calls onStatusChange with plan id and new status when user selects a different option", () => {
-    const onStatusChange = vi.fn();
-    const plan: Plan = { ...basePlan, estado: "pendiente" };
-    render(<PlanCard plan={plan} onStatusChange={onStatusChange} />);
+describe("PlanCard - confirm flow", () => {
+  it("opens a dialog naming the plan and sends nothing until accepted", async () => {
+    const onConfirm = vi.fn();
+    render(<PlanCard plan={basePlan} onConfirm={onConfirm} />);
+    await userEvent.click(screen.getByRole("button", { name: "Confirmar plan" }));
 
-    const select = screen.getByTestId("plan-status-badge");
-    fireEvent.change(select, { target: { value: "hecho" } });
-
-    expect(onStatusChange).toHaveBeenCalledOnce();
-    expect(onStatusChange).toHaveBeenCalledWith(plan.id, "hecho");
+    const dialog = screen.getByRole("alertdialog");
+    expect(dialog).toHaveTextContent("Cena de equipo");
+    expect(dialog).toHaveTextContent(/no podrá volver a borrador/i);
+    expect(onConfirm).not.toHaveBeenCalled();
   });
 
-  it("calls onStatusChange when switching from hecho to retrasado", () => {
-    const onStatusChange = vi.fn();
-    const plan: Plan = { ...basePlan, estado: "hecho" };
-    render(<PlanCard plan={plan} onStatusChange={onStatusChange} />);
-
-    const select = screen.getByTestId("plan-status-badge");
-    fireEvent.change(select, { target: { value: "retrasado" } });
-
-    expect(onStatusChange).toHaveBeenCalledOnce();
-    expect(onStatusChange).toHaveBeenCalledWith(plan.id, "retrasado");
+  it("calls onConfirm with the plan id when the user accepts", async () => {
+    const onConfirm = vi.fn().mockResolvedValue(undefined);
+    render(<PlanCard plan={basePlan} onConfirm={onConfirm} />);
+    await userEvent.click(screen.getByRole("button", { name: "Confirmar plan" }));
+    await userEvent.click(
+      within(screen.getByRole("alertdialog")).getByRole("button", { name: "Confirmar" }),
+    );
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(onConfirm).toHaveBeenCalledWith(basePlan.id);
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
   });
 
-  it("does not crash when onStatusChange is not provided", () => {
-    const plan: Plan = { ...basePlan, estado: "pendiente" };
-    render(<PlanCard plan={plan} />);
-
-    const select = screen.getByTestId("plan-status-badge");
-    // Should not throw
-    fireEvent.change(select, { target: { value: "hecho" } });
-    expect(select).toHaveValue("pendiente"); // value controlled by prop, no state change
+  it("does not call onConfirm when the user cancels", async () => {
+    const onConfirm = vi.fn();
+    render(<PlanCard plan={basePlan} onConfirm={onConfirm} />);
+    await userEvent.click(screen.getByRole("button", { name: "Confirmar plan" }));
+    await userEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+    expect(onConfirm).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
   });
 
-  it("renders all three status options in the select", () => {
-    const plan: Plan = { ...basePlan, estado: "pendiente" };
-    render(<PlanCard plan={plan} />);
-
-    const select = screen.getByTestId("plan-status-badge") as HTMLSelectElement;
-    const options = Array.from(select.options).map((o) => o.value);
-
-    expect(options).toEqual(["pendiente", "hecho", "retrasado"]);
+  it("disables the accept button while the request is pending", async () => {
+    let finish: () => void = () => {};
+    const onConfirm = vi.fn(() => new Promise<void>((resolve) => (finish = resolve)));
+    render(<PlanCard plan={basePlan} onConfirm={onConfirm} />);
+    await userEvent.click(screen.getByRole("button", { name: "Confirmar plan" }));
+    await userEvent.click(
+      within(screen.getByRole("alertdialog")).getByRole("button", { name: "Confirmar" }),
+    );
+    expect(await screen.findByRole("button", { name: "Confirmando…" })).toBeDisabled();
+    finish();
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
   });
 });
 
-describe("PlanCard - action buttons", () => {
-  it("renders both Confirmar and Eliminar buttons", () => {
-    const plan: Plan = { ...basePlan, estado: "pendiente" };
-    render(<PlanCard plan={plan} />);
-
-    expect(screen.getByRole("button", { name: "Confirmar" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Eliminar" })).toBeInTheDocument();
+describe("PlanCard - actions menu", () => {
+  it("has no standalone delete button and exposes an accessible menu button", () => {
+    render(<PlanCard plan={basePlan} />);
+    expect(screen.queryByRole("button", { name: "Eliminar" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Más acciones" }).className).toContain("size-11");
   });
 
-  it("calls onStatusChange with 'hecho' when clicking Confirmar", () => {
-    const onStatusChange = vi.fn();
-    const plan: Plan = { ...basePlan, estado: "pendiente" };
-    render(<PlanCard plan={plan} onStatusChange={onStatusChange} />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
-    expect(onStatusChange).toHaveBeenCalledOnce();
-    expect(onStatusChange).toHaveBeenCalledWith(plan.id, "hecho");
+  it("shows a destructive 'Eliminar' item when the menu opens", async () => {
+    render(<PlanCard plan={basePlan} />);
+    await openMenu();
+    const item = await screen.findByRole("menuitem", { name: "Eliminar" });
+    expect(item.className).toContain("text-destructive");
   });
 
-  it("calls onDelete with plan id when clicking Eliminar", () => {
+  it("closes the menu with Escape and returns focus to the trigger", async () => {
+    render(<PlanCard plan={basePlan} />);
+    await openMenu();
+    await screen.findByRole("menuitem", { name: "Eliminar" });
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("menuitem")).not.toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "Más acciones" })).toHaveFocus();
+  });
+
+  it("asks for confirmation naming the plan before deleting", async () => {
+    const onDelete = vi.fn().mockResolvedValue(undefined);
+    render(<PlanCard plan={basePlan} onDelete={onDelete} />);
+    await openMenu();
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Eliminar" }));
+
+    const dialog = await screen.findByRole("alertdialog");
+    expect(dialog).toHaveTextContent("Cena de equipo");
+    expect(onDelete).not.toHaveBeenCalled();
+
+    await userEvent.click(within(dialog).getByRole("button", { name: "Eliminar" }));
+    expect(onDelete).toHaveBeenCalledTimes(1);
+    expect(onDelete).toHaveBeenCalledWith(basePlan.id);
+  });
+
+  it("keeps the plan when the delete dialog is cancelled", async () => {
     const onDelete = vi.fn();
-    const plan: Plan = { ...basePlan, estado: "pendiente" };
-    render(<PlanCard plan={plan} onDelete={onDelete} />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Eliminar" }));
-    expect(onDelete).toHaveBeenCalledOnce();
-    expect(onDelete).toHaveBeenCalledWith(plan.id);
-  });
-
-  it("does not crash when action buttons are clicked without callbacks", () => {
-    const plan: Plan = { ...basePlan, estado: "pendiente" };
-    render(<PlanCard plan={plan} />);
-
-    // Should not throw
-    fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
-    fireEvent.click(screen.getByRole("button", { name: "Eliminar" }));
+    render(<PlanCard plan={basePlan} onDelete={onDelete} />);
+    await openMenu();
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Eliminar" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Cancelar" }));
+    expect(onDelete).not.toHaveBeenCalled();
   });
 });
