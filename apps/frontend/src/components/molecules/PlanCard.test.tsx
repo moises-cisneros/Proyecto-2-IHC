@@ -117,3 +117,42 @@ describe("PlanCard - interactive status change", () => {
     expect(options).toEqual(["pendiente", "hecho", "retrasado"]);
   });
 });
+
+describe("PlanCard - action buttons", () => {
+  it("renders both Confirmar and Eliminar buttons", () => {
+    const plan: Plan = { ...basePlan, estado: "pendiente" };
+    render(<PlanCard plan={plan} />);
+
+    expect(screen.getByRole("button", { name: "Confirmar" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Eliminar" })).toBeInTheDocument();
+  });
+
+  it("calls onStatusChange with 'hecho' when clicking Confirmar", () => {
+    const onStatusChange = vi.fn();
+    const plan: Plan = { ...basePlan, estado: "pendiente" };
+    render(<PlanCard plan={plan} onStatusChange={onStatusChange} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
+    expect(onStatusChange).toHaveBeenCalledOnce();
+    expect(onStatusChange).toHaveBeenCalledWith(plan.id, "hecho");
+  });
+
+  it("calls onDelete with plan id when clicking Eliminar", () => {
+    const onDelete = vi.fn();
+    const plan: Plan = { ...basePlan, estado: "pendiente" };
+    render(<PlanCard plan={plan} onDelete={onDelete} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Eliminar" }));
+    expect(onDelete).toHaveBeenCalledOnce();
+    expect(onDelete).toHaveBeenCalledWith(plan.id);
+  });
+
+  it("does not crash when action buttons are clicked without callbacks", () => {
+    const plan: Plan = { ...basePlan, estado: "pendiente" };
+    render(<PlanCard plan={plan} />);
+
+    // Should not throw
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Eliminar" }));
+  });
+});

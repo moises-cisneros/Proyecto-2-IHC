@@ -16,43 +16,37 @@ function renderLoginPage() {
   );
 }
 
-describe("LoginPage - Interactive color button", () => {
+describe("LoginPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("1. renders initially in red state", () => {
+  it("renders email, password inputs and login button", () => {
     renderLoginPage();
-    const button = screen.getByTestId("color-test-button");
-    expect(button).toBeInTheDocument();
-    expect(button).toHaveTextContent(/Color: Rojo/i);
-    expect(button).toHaveStyle({ backgroundColor: "rgb(220, 38, 38)" });
+    expect(screen.getByLabelText("Correo electrónico")).toBeInTheDocument();
+    expect(screen.getByLabelText("Contraseña")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Entrar" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "¿Olvidaste tu contraseña?" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Crear cuenta" })).toBeInTheDocument();
   });
 
-  it("2. switches to yellow state on first click", async () => {
+  it("does not render the demo color test button", () => {
     renderLoginPage();
-    const button = screen.getByTestId("color-test-button");
-    await userEvent.click(button);
-    expect(button).toHaveTextContent(/Color: Amarillo/i);
-    expect(button).toHaveStyle({ backgroundColor: "rgb(250, 204, 21)" });
+    expect(screen.queryByTestId("color-test-button")).not.toBeInTheDocument();
   });
 
-  it("3. switches to green state on second click", async () => {
+  it("shows validation error when submitting with empty fields", async () => {
     renderLoginPage();
-    const button = screen.getByTestId("color-test-button");
-    await userEvent.click(button);
-    await userEvent.click(button);
-    expect(button).toHaveTextContent(/Color: Verde/i);
-    expect(button).toHaveStyle({ backgroundColor: "rgb(22, 163, 74)" });
+    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
+    expect(screen.getByText("Ingresa un correo válido.")).toBeInTheDocument();
+    expect(screen.getByText("Ingresa tu contraseña.")).toBeInTheDocument();
   });
 
-  it("4. cycles back to red state on third click", async () => {
+  it("shows validation error when email format is invalid", async () => {
     renderLoginPage();
-    const button = screen.getByTestId("color-test-button");
-    await userEvent.click(button);
-    await userEvent.click(button);
-    await userEvent.click(button);
-    expect(button).toHaveTextContent(/Color: Rojo/i);
-    expect(button).toHaveStyle({ backgroundColor: "rgb(220, 38, 38)" });
+    await userEvent.type(screen.getByLabelText("Correo electrónico"), "invalid-email");
+    await userEvent.type(screen.getByLabelText("Contraseña"), "secret123");
+    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
+    expect(screen.getByText("Ingresa un correo válido.")).toBeInTheDocument();
   });
 });

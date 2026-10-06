@@ -17,11 +17,11 @@ describe("PlanForm", () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
-  it("only asks for description, due date, and estado (no plan ID field)", () => {
+  it("only asks for description and due date (no plan ID or estado field)", () => {
     render(<PlanForm onSubmit={vi.fn()} onCancel={() => {}} />);
     expect(screen.getByLabelText("Descripción")).toBeInTheDocument();
     expect(screen.getByLabelText("Fecha límite")).toBeInTheDocument();
-    expect(screen.getByLabelText("Estado")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Estado")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("ID del plan")).not.toBeInTheDocument();
     expect(screen.getAllByRole("textbox")).toHaveLength(1);
   });
@@ -37,7 +37,7 @@ describe("PlanForm", () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
-  it("submits the trimmed payload when valid with default estado", async () => {
+  it("submits the trimmed payload when valid with default estado 'pendiente'", async () => {
     const onSubmit = vi.fn().mockResolvedValue(ok);
     render(<PlanForm onSubmit={onSubmit} onCancel={() => {}} />);
     await userEvent.type(screen.getByLabelText("Descripción"), " Cena de grupo ");
@@ -51,19 +51,10 @@ describe("PlanForm", () => {
     });
   });
 
-  it("allows selecting a custom estado like 'hecho' or 'retrasado'", async () => {
-    const onSubmit = vi.fn().mockResolvedValue(ok);
-    render(<PlanForm onSubmit={onSubmit} onCancel={() => {}} />);
-    await userEvent.type(screen.getByLabelText("Descripción"), "Cena");
-    await userEvent.type(screen.getByLabelText("Fecha límite"), "2026-12-24");
-    await userEvent.selectOptions(screen.getByLabelText("Estado"), "hecho");
-    await userEvent.click(screen.getByRole("button", { name: "Crear plan" }));
-
-    expect(onSubmit).toHaveBeenCalledWith({
-      description: "Cena",
-      dueDate: "2026-12-24",
-      estado: "hecho",
-    });
+  it("does not render an estado selection dropdown", () => {
+    render(<PlanForm onSubmit={vi.fn()} onCancel={() => {}} />);
+    expect(screen.queryByRole("combobox", { name: "Estado" })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Estado")).not.toBeInTheDocument();
   });
 
   it("calls onCancel without submitting", async () => {

@@ -1,5 +1,6 @@
 import type { Plan, PlanStatus } from "../../api/client";
 import { formatDueDate } from "../../lib/plans";
+import { Button } from "../atoms/Button";
 
 interface StatusConfig {
   label: string;
@@ -42,9 +43,10 @@ const STATUS_KEYS: PlanStatus[] = ["pendiente", "hecho", "retrasado"];
 interface PlanCardProps {
   plan: Plan;
   onStatusChange?: (id: string, estado: PlanStatus) => void;
+  onDelete?: (id: string) => void;
 }
 
-export function PlanCard({ plan, onStatusChange }: PlanCardProps) {
+export function PlanCard({ plan, onStatusChange, onDelete }: PlanCardProps) {
   const statusKey = plan.estado?.toLowerCase() ?? "pendiente";
   const status = STATUS_CONFIG[statusKey] ?? STATUS_CONFIG.pendiente;
 
@@ -82,6 +84,25 @@ export function PlanCard({ plan, onStatusChange }: PlanCardProps) {
       <p className="mt-s text-label text-text-muted">
         Fecha límite: <time dateTime={plan.dueDate}>{formatDueDate(plan.dueDate)}</time>
       </p>
+      <div className="mt-m flex flex-wrap gap-s border-t border-border pt-s">
+        <Button
+          type="button"
+          variant="primary"
+          disabled={statusKey === "hecho"}
+          onClick={() => onStatusChange?.(plan.id, "hecho")}
+        >
+          Confirmar
+        </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          style={STATUS_CONFIG.retrasado.style}
+          className={`border font-semibold hover:opacity-90 ${STATUS_CONFIG.retrasado.className}`}
+          onClick={() => onDelete?.(plan.id)}
+        >
+          Eliminar
+        </Button>
+      </div>
     </article>
   );
 }

@@ -4,9 +4,10 @@ import { PlanCard } from "../molecules/PlanCard";
 interface PlanListProps {
   plans: Plan[];
   onStatusChange?: (id: string, estado: PlanStatus) => void;
+  onDelete?: (id: string) => void;
 }
 
-export function PlanList({ plans, onStatusChange }: PlanListProps) {
+export function PlanList({ plans, onStatusChange, onDelete }: PlanListProps) {
   if (plans.length === 0) {
     return (
       <div className="rounded-base border border-border bg-card p-xl">
@@ -20,7 +21,11 @@ export function PlanList({ plans, onStatusChange }: PlanListProps) {
     <ul className="m-0 flex list-none flex-col gap-m p-0">
       {plans.map((plan) => (
         <li key={plan.id}>
-          <PlanCard plan={plan} onStatusChange={onStatusChange} />
+          <PlanCard
+            plan={plan}
+            onStatusChange={onStatusChange}
+            onDelete={onDelete}
+          />
         </li>
       ))}
     </ul>

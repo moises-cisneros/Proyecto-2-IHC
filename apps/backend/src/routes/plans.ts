@@ -22,6 +22,7 @@ export interface PlansStore {
   /** The store generates the plan id. */
   create(userId: string, data: PlanInput): Promise<StoredPlan>;
   updateStatus(userId: string, planId: string, estado: PlanStatus): Promise<StoredPlan | null>;
+  delete(userId: string, planId: string): Promise<boolean>;
 }
 
 export function createPrismaPlansStore(): PlansStore {
@@ -53,6 +54,12 @@ export function createPrismaPlansStore(): PlansStore {
         data: { estado },
         select: { id: true, description: true, dueDate: true, estado: true, createdAt: true },
       });
+    },
+    delete: async (userId, planId) => {
+      const result = await prisma.plan.deleteMany({
+        where: { id: planId, userId },
+      });
+      return result.count > 0;
     },
   };
 }
@@ -115,12 +122,27 @@ export function createPlansRouter(store: PlansStore): Router {
         res.status(400).json({ message: "Datos inválidos", errors: fieldErrors(parsed.error) });
         return;
       }
-      const updated = await store.updateStatus(user.id, req.params.id, parsed.data.estado);
+      const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+      const updated = await store.updateStatus(user.id, id, parsed.data.estado);
       if (!updated) {
         res.status(404).json({ message: "Plan no encontrado" });
         return;
       }
       res.status(200).json({ plan: serialize(updated) });
+    }),
+  );
+
+  router.delete(
+    "/:id",
+    wrap(async (req, res) => {
+      const user = res.locals.user as User;
+      const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+      const deleted = await store.delete(user.id, id);
+      if (!deleted) {
+        res.status(404).json({ message: "Plan no encontrado" });
+        return;
+      }
+      res.status(200).json({ message: "Plan eliminado" });
     }),
   );
 

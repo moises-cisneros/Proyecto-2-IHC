@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import type { PlanInput, PlanStatus } from "../../api/client";
+import type { PlanInput } from "../../api/client";
 import type { AddPlanResult } from "../../hooks/usePlans";
 import { Button } from "../atoms/Button";
 import { Field } from "../atoms/Field";
@@ -29,14 +29,13 @@ interface PlanFormProps {
 export function PlanForm({ onSubmit, onCancel }: PlanFormProps) {
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
-  const [estado, setEstado] = useState<PlanStatus>("pendiente");
   const [errors, setErrors] = useState<Errors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    const values: PlanInput = { description: description.trim(), dueDate, estado };
+    const values: PlanInput = { description: description.trim(), dueDate, estado: "pendiente" };
     const nextErrors = validate(values);
     setErrors(nextErrors);
     setFormError(null);
@@ -78,21 +77,6 @@ export function PlanForm({ onSubmit, onCancel }: PlanFormProps) {
         onChange={(e) => setDueDate(e.target.value)}
         error={errors.dueDate}
       />
-      <div className="mb-m flex flex-col gap-xs">
-        <label htmlFor="plan-estado" className="text-label text-text">
-          Estado
-        </label>
-        <select
-          id="plan-estado"
-          value={estado}
-          onChange={(e) => setEstado(e.target.value as PlanStatus)}
-          className="min-h-11 rounded-base border border-border bg-card px-m py-s text-body text-text focus:border-primary focus:outline-none"
-        >
-          <option value="pendiente">Pendiente</option>
-          <option value="hecho">Hecho</option>
-          <option value="retrasado">Retrasado</option>
-        </select>
-      </div>
       <div className="flex flex-wrap gap-s">
         <Button type="submit" disabled={submitting}>
           {submitting ? "Creando…" : "Crear plan"}

@@ -45,6 +45,12 @@ function createMemoryStore(): PlansStore {
       row.estado = estado;
       return row;
     },
+    async delete(userId, planId) {
+      const index = rows.findIndex((r) => r.id === planId && r.userId === userId);
+      if (index === -1) return false;
+      rows.splice(index, 1);
+      return true;
+    },
   };
 }
 
@@ -222,6 +228,50 @@ describe("plans router", () => {
 
     it("requires authentication returning 401 without cookie", async () => {
       const res = await request(app).patch("/api/plans/fake-id").send({ estado: "hecho" });
+      expect(res.status).toBe(401);
+    });
+  });
+
+  describe("DELETE /api/plans/:id", () => {
+    it("deletes a plan successfully returning 200 and removes it from list", async () => {
+      const created = await request(app).post("/api/plans").set("Cookie", cookieFor("u1")).send(body);
+      const planId = created.body.plan.id;
+
+      const deleteRes = await request(app)
+        .delete(`/api/plans/${planId}`)
+        .set("Cookie", cookieFor("u1"));
+      expect(deleteRes.status).toBe(200);
+      expect(deleteRes.body.message).toBe("Plan eliminado");
+
+      const listRes = await request(app).get("/api/plans").set("Cookie", cookieFor("u1"));
+      expect(listRes.body.plans).toEqual([]);
+    });
+
+    it("returns 404 if plan does not exist", async () => {
+      const res = await request(app)
+        .delete(`/api/plans/00000000-0000-0000-0000-000000000000`)
+        .set("Cookie", cookieFor("u1"));
+      expect(res.status).toBe(404);
+      expect(res.body.message).toBe("Plan no encontrado");
+    });
+
+    it("returns 404 if trying to delete another user's plan", async () => {
+      const created = await request(app).post("/api/plans").set("Cookie", cookieFor("u1")).send(body);
+      const planId = created.body.plan.id;
+
+      const res = await request(app)
+        .delete(`/api/plans/${planId}`)
+        .set("Cookie", cookieFor("u2"));
+      expect(res.status).toBe(404);
+      expect(res.body.message).toBe("Plan no encontrado");
+
+      // Verify u1 still has the plan
+      const listRes = await request(app).get("/api/plans").set("Cookie", cookieFor("u1"));
+      expect(listRes.body.plans).toHaveLength(1);
+    });
+
+    it("requires authentication returning 401 without cookie", async () => {
+      const res = await request(app).delete("/api/plans/any-id");
       expect(res.status).toBe(401);
     });
   });

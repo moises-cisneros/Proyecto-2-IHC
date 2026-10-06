@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { PlanInput } from "../api/client";
+import type { PlanInput, PlanStatus } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { Button } from "../components/atoms/Button";
 import { ErrorAlert, SuccessNotice } from "../components/molecules/Notices";
@@ -9,11 +9,13 @@ import { usePlans } from "../hooks/usePlans";
 
 export default function MyPlansPage() {
   const { user } = useAuth();
-  const { plans, loading, loadError, addPlan, updatePlanStatus } = usePlans();
+  const { plans, loading, loadError, addPlan, updatePlanStatus, deletePlan } = usePlans();
   const [formOpen, setFormOpen] = useState(false);
   const [created, setCreated] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   async function handleSubmit(input: PlanInput) {
+    setActionError(null);
     const result = await addPlan(input);
     if (result.ok) {
       setFormOpen(false);
@@ -23,8 +25,22 @@ export default function MyPlansPage() {
   }
 
   function toggleForm() {
+    setActionError(null);
     setCreated(false);
     setFormOpen((open) => !open);
+  }
+
+  async function handleStatusChange(id: string, estado: PlanStatus) {
+    const targetPlan = plans.find((p) => p.id === id);
+    if (targetPlan?.estado === "hecho" && estado === "hecho") {
+      setActionError("Esta acción ya fue confirmada.");
+      return;
+    }
+    setActionError(null);
+    const result = await updatePlanStatus(id, estado);
+    if (!result.ok) {
+      setActionError(result.message);
+    }
   }
 
   return (
@@ -38,13 +54,17 @@ export default function MyPlansPage() {
         </div>
         {created ? <SuccessNotice>Plan creado correctamente.</SuccessNotice> : null}
         {formOpen ? <PlanForm onSubmit={handleSubmit} onCancel={toggleForm} /> : null}
-        <ErrorAlert message={loadError} />
+        <ErrorAlert message={loadError || actionError} />
         {loading ? (
           <p role="status" className="text-text-muted">
             Cargando tus planes…
           </p>
         ) : (
-          <PlanList plans={plans} onStatusChange={updatePlanStatus} />
+          <PlanList
+            plans={plans}
+            onStatusChange={handleStatusChange}
+            onDelete={deletePlan}
+          />
         )}
       </div>
     </>

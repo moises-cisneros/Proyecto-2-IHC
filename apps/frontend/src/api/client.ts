@@ -66,6 +66,8 @@ const post = <T>(path: string, body?: unknown) =>
 const patch = <T>(path: string, body?: unknown) =>
   request<T>(path, { method: "PATCH", body: body === undefined ? undefined : JSON.stringify(body) });
 
+const del = <T>(path: string) => request<T>(path, { method: "DELETE" });
+
 export const api = {
   me: () => request<{ user: PublicUser }>("/auth/me"),
   login: (email: string, password: string) =>
@@ -80,4 +82,5 @@ export const api = {
   createPlan: (input: PlanInput) => post<{ plan: Plan }>("/plans", input),
   updatePlanStatus: (id: string, estado: PlanStatus) =>
     patch<{ plan: Plan }>(`/plans/${id}`, { estado }),
+  deletePlan: (id: string) => del<{ message: string }>(`/plans/${id}`),
 };

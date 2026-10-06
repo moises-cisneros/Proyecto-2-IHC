@@ -11,6 +11,10 @@ export type UpdatePlanStatusResult =
   | { ok: true }
   | { ok: false; message: string };
 
+export type DeletePlanResult =
+  | { ok: true }
+  | { ok: false; message: string };
+
 export function usePlans() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,5 +71,21 @@ export function usePlans() {
     [],
   );
 
-  return { plans, loading, loadError, addPlan, updatePlanStatus };
+  const deletePlan = useCallback(
+    async (id: string): Promise<DeletePlanResult> => {
+      try {
+        await api.deletePlan(id);
+        setPlans((current) => current.filter((p) => p.id !== id));
+        return { ok: true };
+      } catch (error) {
+        if (error instanceof ApiError) {
+          return { ok: false, message: error.message };
+        }
+        return { ok: false, message: "No se pudo eliminar el plan." };
+      }
+    },
+    [],
+  );
+
+  return { plans, loading, loadError, addPlan, updatePlanStatus, deletePlan };
 }
