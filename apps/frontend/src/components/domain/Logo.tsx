@@ -1,4 +1,3 @@
-import { useId } from "react";
 import { cn } from "@/lib/utils";
 
 interface LogoMarkProps {
@@ -7,7 +6,6 @@ interface LogoMarkProps {
 
 /** Planazo symbol: a calendar with a check, plus an amber spark. Decorative by default. */
 export function LogoMark({ className }: LogoMarkProps) {
-  const gradientId = useId();
   return (
     <svg
       viewBox="0 0 64 64"
@@ -15,27 +13,21 @@ export function LogoMark({ className }: LogoMarkProps) {
       focusable="false"
       className={cn("size-9 shrink-0", className)}
     >
-      <defs>
-        <linearGradient id={gradientId} x1="8" y1="4" x2="58" y2="60" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#14b8a6" />
-          <stop offset="1" stopColor="#0f766e" />
-        </linearGradient>
-      </defs>
-      <rect width="64" height="64" rx="18" fill={`url(#${gradientId})`} />
-      <rect x="14" y="19" width="36" height="31" rx="8" fill="#fff" />
-      <rect x="14" y="19" width="36" height="10" rx="5" fill="#ccfbf1" />
-      <rect x="22" y="13" width="4.5" height="12" rx="2.25" fill="#fff" />
-      <rect x="37.5" y="13" width="4.5" height="12" rx="2.25" fill="#fff" />
+      <rect width="64" height="64" rx="18" className="fill-primary" />
+      <rect x="14" y="19" width="36" height="31" rx="8" className="fill-card" />
+      <rect x="14" y="19" width="36" height="10" rx="5" className="fill-secondary" />
+      <rect x="22" y="13" width="4.5" height="12" rx="2.25" className="fill-card" />
+      <rect x="37.5" y="13" width="4.5" height="12" rx="2.25" className="fill-card" />
       <path
         d="M23 40.5l6 6 12-13"
         fill="none"
-        stroke="#0f766e"
+        className="stroke-primary"
         strokeWidth="4.5"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <circle cx="51" cy="14" r="7" fill="#fbbf24" />
-      <path d="M51 9.5v9M46.5 14h9" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="51" cy="14" r="7" className="fill-accent" />
+      <path d="M51 9.5v9M46.5 14h9" className="stroke-card" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
