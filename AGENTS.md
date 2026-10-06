@@ -76,5 +76,12 @@ Las credenciales de los usuarios sembrados (solo para pruebas) están documentad
 
 ## 8. Pruebas Unitarias (Vitest)
 
-- **Obligatorio:** Se deben crear y ejecutar al menos 4 pruebas unitarias por cada funcionalidad nueva implementada.
+- **Ubicación y alcance:** Co-ubicación junto al archivo fuente (`*.test.ts` o `*.test.tsx`). Prohibido sobre-testear archivos triviales; los tests deben apuntar exclusivamente a módulos puntuales con lógica crítica o flujos clave.
+- **Mínimo por archivo:** Cada archivo de test debe contener al menos 4 tests unitarios (`it`/`test`).
 - **Uso de MCP:** Es obligatorio utilizar las herramientas del servidor MCP de `vitest` (como `run_tests`, `list_tests`, etc.) para verificar el correcto funcionamiento y documentar los resultados de las pruebas.
+
+## 9. Arquitectura y Organización de Código
+
+- **Referencia obligatoria:** Toda nueva funcionalidad, módulo o refactorización debe alinearse estrictamente con la estructura y responsabilidades definidas en [ARCHITECTURE.md](ARCHITECTURE.md).
+- **Backend:** Capas claras (`routes/` para HTTP/validación, `services/` para lógica/Prisma, `middleware/` para filtros). Prohibido mezclar consultas directas a la base de datos en las rutas.
+- **Frontend:** Separación de presentación y lógica (`pages/` y `components/` para UI, `hooks/` para estado y orquestación, `api/` para llamadas HTTP). Prohibido invocar `fetch` directo desde componentes.
