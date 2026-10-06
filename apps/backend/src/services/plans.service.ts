@@ -1,5 +1,6 @@
 import { prisma } from "../lib/prisma.js";
-import type { PlanInput, PlanStatus } from "../lib/schemas.js";
+import { INITIAL_PLAN_STATE, confirmPlan } from "../lib/planState.js";
+import type { PlanInput } from "../lib/schemas.js";
 
 export interface StoredPlan {
   id: string;
@@ -13,7 +14,11 @@ export interface PlansStore {
   list(userId: string): Promise<StoredPlan[]>;
   /** The store generates the plan id. */
   create(userId: string, data: PlanInput): Promise<StoredPlan>;
-  updateStatus(userId: string, planId: string, estado: PlanStatus): Promise<StoredPlan | null>;
+  /**
+   * Moves an owned draft to `confirmado`. Resolves `null` when the plan does not
+   * exist or is not owned; rejects with `InvalidTransitionError` when it is already confirmed.
+   */
+  confirm(userId: string, planId: string): Promise<StoredPlan | null>;
   delete(userId: string, planId: string): Promise<boolean>;
 }
 
@@ -31,21 +36,32 @@ export function createPrismaPlansStore(): PlansStore {
           userId,
           description: data.description,
           dueDate: new Date(`${data.dueDate}T00:00:00.000Z`),
-          estado: data.estado ?? "pendiente",
+          estado: INITIAL_PLAN_STATE,
         },
         select: { id: true, description: true, dueDate: true, estado: true, createdAt: true },
       }),
-    updateStatus: async (userId: string, planId: string, estado: PlanStatus) => {
-      const existing = await prisma.plan.findFirst({
-        where: { id: planId, userId },
-        select: { id: true },
-      });
+    confirm: async (userId: string, planId: string) => {
+      const select = {
+        id: true,
+        description: true,
+        dueDate: true,
+        estado: true,
+        createdAt: true,
+      } as const;
+      const existing = await prisma.plan.findFirst({ where: { id: planId, userId }, select });
       if (!existing) return null;
-      return prisma.plan.update({
-        where: { id: planId },
-        data: { estado },
-        select: { id: true, description: true, dueDate: true, estado: true, createdAt: true },
+      const next = confirmPlan(existing);
+      // Guarded write: a concurrent confirm cannot succeed twice.
+      const result = await prisma.plan.updateMany({
+        where: { id: planId, userId, estado: existing.estado },
+        data: { estado: next.estado },
       });
+      if (result.count === 0) {
+        const current = await prisma.plan.findFirst({ where: { id: planId, userId }, select });
+        if (!current) return null;
+        return confirmPlan(current);
+      }
+      return next;
     },
     delete: async (userId: string, planId: string) => {
       const result = await prisma.plan.deleteMany({

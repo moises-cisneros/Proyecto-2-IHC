@@ -1,10 +1,7 @@
 import { Router, type NextFunction, type Request, type Response } from "express";
 import type { User } from "@prisma/client";
-import {
-  fieldErrors,
-  planSchema,
-  updatePlanStatusSchema,
-} from "../lib/schemas.js";
+import { InvalidTransitionError } from "../lib/planState.js";
+import { fieldErrors, planSchema } from "../lib/schemas.js";
 import {
   type StoredPlan,
   type PlansStore,
@@ -62,22 +59,25 @@ export function createPlansRouter(store: PlansStore): Router {
     }),
   );
 
-  router.patch(
-    "/:id",
+  router.post(
+    "/:id/confirm",
     wrap(async (req, res) => {
       const user = res.locals.user as User;
-      const parsed = updatePlanStatusSchema.safeParse(req.body ?? {});
-      if (!parsed.success) {
-        res.status(400).json({ message: "Datos inválidos", errors: fieldErrors(parsed.error) });
-        return;
-      }
       const planId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-      const updated = await store.updateStatus(user.id, planId, parsed.data.estado);
-      if (!updated) {
-        res.status(404).json({ message: "Plan no encontrado" });
-        return;
+      try {
+        const confirmed = await store.confirm(user.id, planId);
+        if (!confirmed) {
+          res.status(404).json({ message: "Plan no encontrado" });
+          return;
+        }
+        res.status(200).json({ plan: serialize(confirmed) });
+      } catch (error) {
+        if (error instanceof InvalidTransitionError) {
+          res.status(409).json({ message: "El plan ya está confirmado" });
+          return;
+        }
+        throw error;
       }
-      res.status(200).json({ plan: serialize(updated) });
     }),
   );
 
