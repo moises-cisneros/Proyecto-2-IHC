@@ -12,7 +12,7 @@ import { daysUntil, getDueStatus } from "../lib/plans";
 
 export default function MyPlansPage() {
   const { user } = useAuth();
-  const { plans, loading, loadError, addPlan } = usePlans();
+  const { plans, loading, loadError, addPlan, updatePlanStatus } = usePlans();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [created, setCreated] = useState(false);
 
@@ -74,7 +74,7 @@ export default function MyPlansPage() {
               />
             </div>
           ) : null}
-          <PlanList plans={plans} onCreate={openDialog} />
+          <PlanList plans={plans} onCreate={openDialog} onStatusChange={updatePlanStatus} />
         </>
       )}
 

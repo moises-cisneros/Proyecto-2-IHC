@@ -5,17 +5,21 @@ export interface PublicUser {
   createdAt: string;
 }
 
+export type PlanStatus = "pendiente" | "hecho" | "retrasado";
+
 export interface Plan {
   id: string;
   description: string;
   /** Calendar date as YYYY-MM-DD. */
   dueDate: string;
+  estado: PlanStatus;
   createdAt: string;
 }
 
 export interface PlanInput {
   description: string;
   dueDate: string;
+  estado?: PlanStatus;
 }
 
 export class ApiError extends Error {
@@ -59,6 +63,9 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 const post = <T>(path: string, body?: unknown) =>
   request<T>(path, { method: "POST", body: body === undefined ? undefined : JSON.stringify(body) });
 
+const patch = <T>(path: string, body?: unknown) =>
+  request<T>(path, { method: "PATCH", body: body === undefined ? undefined : JSON.stringify(body) });
+
 export const api = {
   me: () => request<{ user: PublicUser }>("/auth/me"),
   login: (email: string, password: string) =>
@@ -71,4 +78,6 @@ export const api = {
     post<{ message: string }>("/auth/recover/confirm", { email, token, newPassword }),
   listPlans: () => request<{ plans: Plan[] }>("/plans"),
   createPlan: (input: PlanInput) => post<{ plan: Plan }>("/plans", input),
+  updatePlanStatus: (id: string, estado: PlanStatus) =>
+    patch<{ plan: Plan }>(`/plans/${id}`, { estado }),
 };

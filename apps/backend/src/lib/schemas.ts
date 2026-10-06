@@ -39,6 +39,18 @@ function isRealCalendarDate(value: string): boolean {
   );
 }
 
+export const planStatusValues = ["hecho", "retrasado", "pendiente"] as const;
+export type PlanStatus = (typeof planStatusValues)[number];
+
+export const planStatusSchema = z.enum(planStatusValues, {
+  message: "El estado debe ser uno de: hecho, retrasado, pendiente",
+});
+
+export const updatePlanStatusSchema = z.object({
+  estado: planStatusSchema,
+});
+export type UpdatePlanStatusInput = z.infer<typeof updatePlanStatusSchema>;
+
 export const planSchema = z.object({
   description: z
     .string("La descripción es obligatoria")
@@ -48,6 +60,7 @@ export const planSchema = z.object({
   dueDate: z
     .string("La fecha límite es obligatoria")
     .refine(isRealCalendarDate, "Ingresa una fecha válida"),
+  estado: planStatusSchema.optional().default("pendiente"),
 });
 
 export type PlanInput = z.infer<typeof planSchema>;

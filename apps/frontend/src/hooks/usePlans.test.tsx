@@ -7,18 +7,20 @@ import { usePlans } from "./usePlans";
 
 vi.mock("../api/client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../api/client")>();
-  return { ...actual, api: { listPlans: vi.fn(), createPlan: vi.fn() } };
+  return { ...actual, api: { listPlans: vi.fn(), createPlan: vi.fn(), updatePlanStatus: vi.fn() } };
 });
 
 const plan = (name: string, dueDate: string, createdAt: string): Plan => ({
   id: `3f2a9c1e-0000-4000-8000-${name.padStart(12, "0")}`,
   description: `Descripción ${name}`,
   dueDate,
+  estado: "pendiente",
   createdAt,
 });
 
 const listPlans = vi.mocked(api.listPlans);
 const createPlan = vi.mocked(api.createPlan);
+const updatePlanStatusMock = vi.mocked(api.updatePlanStatus);
 
 describe("usePlans", () => {
   beforeEach(() => {
@@ -76,6 +78,40 @@ describe("usePlans", () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.loadError).toBe("Sin conexión");
     expect(result.current.plans).toEqual([]);
+  });
+
+  it("updates plan status in place on success", async () => {
+    const existing = plan("A", "2026-05-01", "2026-01-01T00:00:00.000Z");
+    listPlans.mockResolvedValue({ plans: [existing] });
+    updatePlanStatusMock.mockResolvedValue({ plan: { ...existing, estado: "hecho" } });
+
+    const { result } = renderHook(() => usePlans());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    let outcome: Awaited<ReturnType<typeof result.current.updatePlanStatus>> | undefined;
+    await act(async () => {
+      outcome = await result.current.updatePlanStatus(existing.id, "hecho");
+    });
+
+    expect(outcome).toEqual({ ok: true });
+    expect(result.current.plans[0].estado).toBe("hecho");
+  });
+
+  it("returns error message and retains previous status on failure", async () => {
+    const existing = plan("A", "2026-05-01", "2026-01-01T00:00:00.000Z");
+    listPlans.mockResolvedValue({ plans: [existing] });
+    updatePlanStatusMock.mockRejectedValue(new ApiError(400, "Error al actualizar"));
+
+    const { result } = renderHook(() => usePlans());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    let outcome: Awaited<ReturnType<typeof result.current.updatePlanStatus>> | undefined;
+    await act(async () => {
+      outcome = await result.current.updatePlanStatus(existing.id, "retrasado");
+    });
+
+    expect(outcome).toEqual({ ok: false, message: "Error al actualizar" });
+    expect(result.current.plans[0].estado).toBe("pendiente");
   });
 });
 

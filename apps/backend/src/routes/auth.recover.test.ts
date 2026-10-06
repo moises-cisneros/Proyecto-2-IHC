@@ -17,7 +17,13 @@ vi.mock("../lib/prisma.js", () => ({
   prisma: { user: { findUnique: mocks.findUnique, update: mocks.update } },
 }));
 
-const plansStore: PlansStore = { list: async () => [], create: async () => { throw new Error("unused"); } };
+const plansStore: PlansStore = {
+  list: async () => [],
+  create: async () => {
+    throw new Error("unused");
+  },
+  updateStatus: async () => null,
+};
 const flush = () => new Promise((resolve) => setImmediate(resolve));
 
 describe("POST /api/auth/recover", () => {

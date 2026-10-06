@@ -1,14 +1,15 @@
 import { CalendarPlus, Plus } from "lucide-react";
-import type { Plan } from "../../api/client";
+import type { Plan, PlanStatus } from "../../api/client";
 import { Button } from "@/components/ui/button";
 import { PlanCard } from "../molecules/PlanCard";
 
 interface PlanListProps {
   plans: Plan[];
   onCreate?: () => void;
+  onStatusChange?: (id: string, estado: PlanStatus) => void;
 }
 
-export function PlanList({ plans, onCreate }: PlanListProps) {
+export function PlanList({ plans, onCreate, onStatusChange }: PlanListProps) {
   if (plans.length === 0) {
     return (
       <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-input bg-card/70 px-6 py-14 text-center">
@@ -34,7 +35,7 @@ export function PlanList({ plans, onCreate }: PlanListProps) {
     <ul className="m-0 grid list-none gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3">
       {plans.map((plan) => (
         <li key={plan.id}>
-          <PlanCard plan={plan} />
+          <PlanCard plan={plan} onStatusChange={onStatusChange} />
         </li>
       ))}
     </ul>

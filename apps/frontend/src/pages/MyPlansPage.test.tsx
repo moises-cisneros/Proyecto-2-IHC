@@ -11,7 +11,7 @@ vi.mock("../auth/AuthContext", () => ({
 
 vi.mock("../api/client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../api/client")>();
-  return { ...actual, api: { listPlans: vi.fn(), createPlan: vi.fn() } };
+  return { ...actual, api: { listPlans: vi.fn(), createPlan: vi.fn(), updatePlanStatus: vi.fn() } };
 });
 
 const listPlans = vi.mocked(api.listPlans);
@@ -21,6 +21,7 @@ const saved: Plan = {
   id: "3f2a9c1e-7b4d-4e8a-9c21-5d6e7f8a9b0c",
   description: "Cena de grupo",
   dueDate: "2026-12-24",
+  estado: "pendiente",
   createdAt: "2026-01-01T00:00:00.000Z",
 };
 
@@ -63,6 +64,7 @@ describe("MyPlansPage", () => {
     expect(createPlan).toHaveBeenCalledWith({
       description: "Cena de grupo",
       dueDate: "2026-12-24",
+      estado: "pendiente",
     });
     expect(listPlans).toHaveBeenCalledTimes(1);
   });
@@ -75,6 +77,19 @@ describe("MyPlansPage", () => {
 
     render(<MyPlansPage />);
     expect(await screen.findByRole("article")).toHaveTextContent("Cena de grupo");
+  });
+
+  it("allows changing status on a rendered card and persists the change", async () => {
+    listPlans.mockResolvedValue({ plans: [saved] });
+    const updateMock = vi.mocked(api.updatePlanStatus);
+    updateMock.mockResolvedValue({ plan: { ...saved, estado: "hecho" } });
+
+    render(<MyPlansPage />);
+    const badge = await screen.findByTestId("plan-status-badge");
+    expect(badge).toHaveValue("pendiente");
+
+    await userEvent.selectOptions(badge, "hecho");
+    expect(updateMock).toHaveBeenCalledWith(saved.id, "hecho");
   });
 
   it("keeps the form open with an error when the server rejects the plan", async () => {

@@ -7,6 +7,7 @@ const plan = (name: string, dueDate: string): Plan => ({
   id: `3f2a9c1e-0000-4000-8000-${name.padStart(12, "0")}`,
   description: `Descripción de ${name}`,
   dueDate,
+  estado: "pendiente",
   createdAt: "2026-01-01T00:00:00.000Z",
 });
 
