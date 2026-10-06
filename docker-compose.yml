@@ -33,7 +33,7 @@ services:
       SMTP_SECURE: ${SMTP_SECURE:-true}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
-      SMTP_FROM: ${SMTP_FROM:-"Planazo Soporte" <no-reply@planazo.com>}
+      SMTP_FROM: '${SMTP_FROM:-"Planazo Soporte" <no-reply@planazo.com>}'
     ports:
       - "3000:3000"
     volumes:
