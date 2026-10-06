@@ -81,5 +81,19 @@ export function createPlansRouter(store: PlansStore): Router {
     }),
   );
 
+  router.delete(
+    "/:id",
+    wrap(async (req, res) => {
+      const user = res.locals.user as User;
+      const planId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+      const deleted = await store.delete(user.id, planId);
+      if (!deleted) {
+        res.status(404).json({ message: "Plan no encontrado" });
+        return;
+      }
+      res.status(200).json({ message: "Plan eliminado" });
+    }),
+  );
+
   return router;
 }

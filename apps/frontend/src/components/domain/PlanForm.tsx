@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { CalendarDays, LoaderCircle } from "lucide-react";
-import type { PlanInput, PlanStatus } from "../../api/client";
+import type { PlanInput } from "../../api/client";
 import type { AddPlanResult } from "../../hooks/usePlans";
 import { Button } from "@/components/ui/button";
 import { Field } from "./Field";
@@ -31,14 +31,13 @@ interface PlanFormProps {
 export function PlanForm({ onSubmit, onCancel }: PlanFormProps) {
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
-  const [estado, setEstado] = useState<PlanStatus>("pendiente");
   const [errors, setErrors] = useState<Errors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    const values: PlanInput = { description: description.trim(), dueDate, estado };
+    const values: PlanInput = { description: description.trim(), dueDate, estado: "pendiente" };
     const nextErrors = validate(values);
     setErrors(nextErrors);
     setFormError(null);
@@ -77,24 +76,6 @@ export function PlanForm({ onSubmit, onCancel }: PlanFormProps) {
         onChange={(e) => setDueDate(e.target.value)}
         error={errors.dueDate}
       />
-      <div className="grid gap-1.5">
-        <label
-          htmlFor="plan-estado"
-          className="text-sm font-semibold leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-        >
-          Estado
-        </label>
-        <select
-          id="plan-estado"
-          value={estado}
-          onChange={(e) => setEstado(e.target.value as PlanStatus)}
-          className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring"
-        >
-          <option value="pendiente">Pendiente</option>
-          <option value="hecho">Hecho</option>
-          <option value="retrasado">Retrasado</option>
-        </select>
-      </div>
       <div className="mt-2 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Button type="button" variant="outline" onClick={onCancel} disabled={submitting}>
           Cancelar

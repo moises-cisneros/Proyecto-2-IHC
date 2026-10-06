@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { CalendarClock, ListChecks, Plus, TriangleAlert } from "lucide-react";
-import type { PlanInput } from "../api/client";
+import type { PlanInput, PlanStatus } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,11 +16,13 @@ import { daysUntil, getDueStatus } from "../lib/plans";
 
 export default function MyPlansPage() {
   const { user } = useAuth();
-  const { plans, loading, loadError, addPlan, updatePlanStatus } = usePlans();
+  const { plans, loading, loadError, addPlan, updatePlanStatus, deletePlan } = usePlans();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [created, setCreated] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   async function handleSubmit(input: PlanInput) {
+    setActionError(null);
     const result = await addPlan(input);
     if (result.ok) {
       setDialogOpen(false);
@@ -32,6 +34,23 @@ export default function MyPlansPage() {
   function openDialog() {
     setCreated(false);
     setDialogOpen(true);
+  }
+
+  async function handleStatusChange(id: string, estado: PlanStatus) {
+    const targetPlan = plans.find((p) => p.id === id);
+    if (targetPlan?.estado === "hecho" && estado === "hecho") {
+      setActionError("Esta acción ya fue confirmada.");
+      return;
+    }
+    setActionError(null);
+    const result = await updatePlanStatus(id, estado);
+    if (!result.ok) setActionError(result.message);
+  }
+
+  async function handleDelete(id: string) {
+    setActionError(null);
+    const result = await deletePlan(id);
+    if (!result.ok) setActionError(result.message);
   }
 
   const nextPlan = plans.find((plan) => daysUntil(plan.dueDate) >= 0);
@@ -53,7 +72,7 @@ export default function MyPlansPage() {
       </header>
 
       {created ? <SuccessNotice>Plan creado correctamente.</SuccessNotice> : null}
-      <ErrorAlert message={loadError} />
+      <ErrorAlert message={loadError || actionError} />
 
       {loading ? (
         <p role="status" className="text-muted-foreground">
@@ -78,7 +97,12 @@ export default function MyPlansPage() {
               />
             </div>
           ) : null}
-          <PlanList plans={plans} onCreate={openDialog} onStatusChange={updatePlanStatus} />
+          <PlanList
+            plans={plans}
+            onCreate={openDialog}
+            onStatusChange={handleStatusChange}
+            onDelete={handleDelete}
+          />
         </>
       )}
 

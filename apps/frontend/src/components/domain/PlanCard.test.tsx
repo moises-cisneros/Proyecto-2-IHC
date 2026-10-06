@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { Plan, PlanStatus } from "../../api/client";
-import { PlanCard } from "./PlanCard";
+import { PlanCard, STATUS_CONFIG } from "./PlanCard";
 
 const basePlan: Plan = {
   id: "3f2a9c1e-7b4d-4e8a-9c21-5d6e7f8a9b0c",
@@ -102,8 +102,9 @@ describe("PlanCard - interactive status change", () => {
     render(<PlanCard plan={plan} />);
 
     const select = screen.getByTestId("plan-status-badge");
+    // Should not throw
     fireEvent.change(select, { target: { value: "hecho" } });
-    expect(select).toHaveValue("pendiente");
+    expect(select).toHaveValue("pendiente"); // value controlled by prop, no state change
   });
 
   it("renders all three status options in the select", () => {
@@ -114,5 +115,44 @@ describe("PlanCard - interactive status change", () => {
     const options = Array.from(select.options).map((o) => o.value);
 
     expect(options).toEqual(["pendiente", "hecho", "retrasado"]);
+  });
+});
+
+describe("PlanCard - action buttons", () => {
+  it("renders both Confirmar and Eliminar buttons", () => {
+    const plan: Plan = { ...basePlan, estado: "pendiente" };
+    render(<PlanCard plan={plan} />);
+
+    expect(screen.getByRole("button", { name: "Confirmar" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Eliminar" })).toBeInTheDocument();
+  });
+
+  it("calls onStatusChange with 'hecho' when clicking Confirmar", () => {
+    const onStatusChange = vi.fn();
+    const plan: Plan = { ...basePlan, estado: "pendiente" };
+    render(<PlanCard plan={plan} onStatusChange={onStatusChange} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
+    expect(onStatusChange).toHaveBeenCalledOnce();
+    expect(onStatusChange).toHaveBeenCalledWith(plan.id, "hecho");
+  });
+
+  it("calls onDelete with plan id when clicking Eliminar", () => {
+    const onDelete = vi.fn();
+    const plan: Plan = { ...basePlan, estado: "pendiente" };
+    render(<PlanCard plan={plan} onDelete={onDelete} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Eliminar" }));
+    expect(onDelete).toHaveBeenCalledOnce();
+    expect(onDelete).toHaveBeenCalledWith(plan.id);
+  });
+
+  it("does not crash when action buttons are clicked without callbacks", () => {
+    const plan: Plan = { ...basePlan, estado: "pendiente" };
+    render(<PlanCard plan={plan} />);
+
+    // Should not throw
+    fireEvent.click(screen.getByRole("button", { name: "Confirmar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Eliminar" }));
   });
 });

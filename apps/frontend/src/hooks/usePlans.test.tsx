@@ -7,7 +7,15 @@ import { usePlans } from "./usePlans";
 
 vi.mock("../api/client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../api/client")>();
-  return { ...actual, api: { listPlans: vi.fn(), createPlan: vi.fn(), updatePlanStatus: vi.fn() } };
+  return {
+    ...actual,
+    api: {
+      listPlans: vi.fn(),
+      createPlan: vi.fn(),
+      updatePlanStatus: vi.fn(),
+      deletePlan: vi.fn(),
+    },
+  };
 });
 
 const plan = (name: string, dueDate: string, createdAt: string): Plan => ({
@@ -21,6 +29,7 @@ const plan = (name: string, dueDate: string, createdAt: string): Plan => ({
 const listPlans = vi.mocked(api.listPlans);
 const createPlan = vi.mocked(api.createPlan);
 const updatePlanStatusMock = vi.mocked(api.updatePlanStatus);
+const deletePlanMock = vi.mocked(api.deletePlan);
 
 describe("usePlans", () => {
   beforeEach(() => {
@@ -112,6 +121,43 @@ describe("usePlans", () => {
 
     expect(outcome).toEqual({ ok: false, message: "Error al actualizar" });
     expect(result.current.plans[0].estado).toBe("pendiente");
+  });
+
+  it("removes plan from state on successful deletion", async () => {
+    const plan1 = plan("A", "2026-05-01", "2026-01-01T00:00:00.000Z");
+    const plan2 = plan("B", "2026-06-01", "2026-01-02T00:00:00.000Z");
+    listPlans.mockResolvedValue({ plans: [plan1, plan2] });
+    deletePlanMock.mockResolvedValue({ message: "Plan eliminado" });
+
+    const { result } = renderHook(() => usePlans());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.plans).toHaveLength(2);
+
+    let outcome: Awaited<ReturnType<typeof result.current.deletePlan>> | undefined;
+    await act(async () => {
+      outcome = await result.current.deletePlan(plan1.id);
+    });
+
+    expect(outcome).toEqual({ ok: true });
+    expect(result.current.plans).toHaveLength(1);
+    expect(result.current.plans[0].id).toBe(plan2.id);
+  });
+
+  it("retains plan and returns error message on deletion failure", async () => {
+    const plan1 = plan("A", "2026-05-01", "2026-01-01T00:00:00.000Z");
+    listPlans.mockResolvedValue({ plans: [plan1] });
+    deletePlanMock.mockRejectedValue(new ApiError(500, "Error en el servidor"));
+
+    const { result } = renderHook(() => usePlans());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    let outcome: Awaited<ReturnType<typeof result.current.deletePlan>> | undefined;
+    await act(async () => {
+      outcome = await result.current.deletePlan(plan1.id);
+    });
+
+    expect(outcome).toEqual({ ok: false, message: "Error en el servidor" });
+    expect(result.current.plans).toHaveLength(1);
   });
 });
 

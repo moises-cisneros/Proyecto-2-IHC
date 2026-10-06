@@ -130,6 +130,29 @@ El desarrollo en Planazo sigue la metodología **Spec-Driven Development (SDD)**
   * `refactor: <descripción>` para reestructuración de código sin cambio funcional.
   * `test: <descripción>` para adición o actualización de pruebas.
   * `chore: <descripción>` para tareas de mantenimiento o configuración.
-* **Sin atribución de IA:** No incluir firmas de co-autoría automatizadas (`Co-Authored-By: ...`) en los commits.
+* **Sin atribución de IA (regla clave):** Ningún commit, pull request, issue, comentario ni documento puede mencionar, referenciar o atribuir contribución a una IA (por ejemplo `Co-Authored-By: Claude ...`, "Generated with ...", "con ayuda de ChatGPT", etc.). La autoría es siempre de la persona que contribuye.
 * **TypeScript & Tipado:** Priorizar tipado estricto en frontend y backend.
 * **Validación:** Antes de enviar un pull request o finalizar una tarea, verifica que el linter y las pruebas pasen sin errores.
+
+---
+
+## 8. Gestión de Issues y Pull Requests
+
+Para mantener el orden del equipo sin burocracia innecesaria:
+
+### Issues
+
+* Toda tarea o requerimiento debe registrarse en una issue breve con:
+  * **Objetivo:** Qué se busca resolver o implementar.
+  * **Criterios de Aceptación:** Qué comportamiento define que la tarea está terminada.
+  * **Pruebas esperadas:** Qué casos de prueba unitaria deben cubrirse (mínimo 4 si involucra reglas de negocio o transiciones de estado, según [AGENTS.md](AGENTS.md)).
+
+### Pull Requests (PRs)
+
+* Crear una rama descriptiva (`feat/<nombre>`, `fix/<nombre>`).
+* Si la PR resuelve una issue, mencionarlo en la descripción con `Closes #<número>` para que no quede sin referencia y la issue se cierre al hacer merge (opcional si no hay issue asociada).
+* La descripción de la PR no debe contener referencias ni atribuciones a ninguna IA.
+* Respetar las responsabilidades de [ARCHITECTURE.md](ARCHITECTURE.md):
+  * Backend: lógica y reglas de estado en `services/`, validación HTTP en `routes/`.
+  * Frontend: llamadas en `api/`, estado en `hooks/`, presentación en `components/`.
+* Verificar que pasen las pruebas (`pnpm --filter backend test` / `pnpm --filter frontend test`) antes de solicitar revisión.

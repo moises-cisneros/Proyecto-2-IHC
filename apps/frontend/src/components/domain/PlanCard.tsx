@@ -1,6 +1,7 @@
 import { CalendarDays, Clock } from "lucide-react";
 import type { Plan, PlanStatus } from "../../api/client";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatDueDate, getDueStatus } from "../../lib/plans";
 import type { DueTone } from "../../lib/plans";
@@ -53,9 +54,10 @@ const toneStyles: Record<DueTone, { badge: "danger" | "warning" | "default" | "m
 interface PlanCardProps {
   plan: Plan;
   onStatusChange?: (id: string, estado: PlanStatus) => void;
+  onDelete?: (id: string) => void;
 }
 
-export function PlanCard({ plan, onStatusChange }: PlanCardProps) {
+export function PlanCard({ plan, onStatusChange, onDelete }: PlanCardProps) {
   const dueStatus = getDueStatus(plan.dueDate);
   const tone = toneStyles[dueStatus.tone];
 
@@ -97,6 +99,26 @@ export function PlanCard({ plan, onStatusChange }: PlanCardProps) {
         <CalendarDays aria-hidden="true" className="size-4 text-primary" />
         <time dateTime={plan.dueDate}>{formatDueDate(plan.dueDate)}</time>
       </p>
+      <div className="flex flex-wrap gap-2 border-t pt-3">
+        <Button
+          type="button"
+          size="sm"
+          disabled={statusKey === "hecho"}
+          onClick={() => onStatusChange?.(plan.id, "hecho")}
+        >
+          Confirmar
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          style={STATUS_CONFIG.retrasado.style}
+          className={cn("font-semibold hover:opacity-90", STATUS_CONFIG.retrasado.className)}
+          onClick={() => onDelete?.(plan.id)}
+        >
+          Eliminar
+        </Button>
+      </div>
     </article>
   );
 }

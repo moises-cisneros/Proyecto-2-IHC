@@ -14,6 +14,7 @@ export interface PlansStore {
   /** The store generates the plan id. */
   create(userId: string, data: PlanInput): Promise<StoredPlan>;
   updateStatus(userId: string, planId: string, estado: PlanStatus): Promise<StoredPlan | null>;
+  delete(userId: string, planId: string): Promise<boolean>;
 }
 
 export function createPrismaPlansStore(): PlansStore {
@@ -45,6 +46,12 @@ export function createPrismaPlansStore(): PlansStore {
         data: { estado },
         select: { id: true, description: true, dueDate: true, estado: true, createdAt: true },
       });
+    },
+    delete: async (userId: string, planId: string) => {
+      const result = await prisma.plan.deleteMany({
+        where: { id: planId, userId },
+      });
+      return result.count > 0;
     },
   };
 }
