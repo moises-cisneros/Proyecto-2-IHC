@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { ArrowLeft, KeyRound, LoaderCircle, Lock, Mail, ShieldCheck } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { ApiError, api } from "../api/client";
 import { Button } from "@/components/ui/button";
 import { Field } from "../components/atoms/Field";
@@ -14,11 +14,14 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 type Step = "request" | "confirm" | "done";
 
 export default function RecoverPage() {
-  const [step, setStep] = useState<Step>("request");
-  const [email, setEmail] = useState("");
-  const [token, setToken] = useState("");
+  const [searchParams] = useSearchParams();
+  const tokenFromUrl = searchParams.get("token") || "";
+  const emailFromUrl = searchParams.get("email") || "";
+
+  const [step, setStep] = useState<Step>(tokenFromUrl && emailFromUrl ? "confirm" : "request");
+  const [email, setEmail] = useState(emailFromUrl);
+  const [token, setToken] = useState(tokenFromUrl);
   const [newPassword, setNewPassword] = useState("");
-  const [simulatedToken, setSimulatedToken] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ email?: string; token?: string; newPassword?: string }>(
     {},
   );
@@ -35,8 +38,7 @@ export default function RecoverPage() {
     setErrors({});
     setSubmitting(true);
     try {
-      const data = await api.recover(email.trim());
-      setSimulatedToken(data.token ?? null);
+      await api.recover(email.trim());
       setStep("confirm");
     } catch (error) {
       setFormError(error instanceof ApiError ? error.message : "No se pudo solicitar el token.");
@@ -99,16 +101,7 @@ export default function RecoverPage() {
         icon={KeyRound}
       >
         <SuccessNotice>
-          {simulatedToken ? (
-            <>
-              <strong>Token:</strong>{" "}
-              <code data-testid="simulated-token" className="break-all">
-                {simulatedToken}
-              </code>
-            </>
-          ) : (
-            "Si el correo existe, se generó un token de recuperación."
-          )}
+          Si el correo existe, se generó un token de recuperación y te lo enviamos por email.
         </SuccessNotice>
         <form onSubmit={handleConfirm} noValidate className="grid gap-4">
           <ErrorAlert message={formError} />

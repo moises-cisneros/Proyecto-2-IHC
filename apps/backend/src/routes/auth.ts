@@ -3,6 +3,7 @@ import { Router, type Request, type Response, type NextFunction } from "express"
 import bcrypt from "bcryptjs";
 import type { User } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
+import { sendPasswordResetEmail } from "../lib/mailer.js";
 import { clearSession, issueSession } from "../lib/session.js";
 import { toPublicUser } from "../lib/publicUser.js";
 import {
@@ -88,7 +89,7 @@ authRouter.post(
     }
     const { email } = parsed.data;
     const message =
-      "Si el correo existe, se generó un token de recuperación.";
+      "Si el correo existe, te enviamos instrucciones de recuperación.";
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       res.status(200).json({ message });
@@ -102,7 +103,9 @@ authRouter.post(
         resetTokenExpiresAt: new Date(Date.now() + RESET_TTL_MS),
       },
     });
-    res.status(200).json({ message, token });
+    // Fire-and-forget: sendPasswordResetEmail never rejects and must not delay the response.
+    void sendPasswordResetEmail(user.email, token);
+    res.status(200).json({ message });
   }),
 );
 

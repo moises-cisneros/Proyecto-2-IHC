@@ -12,3 +12,4 @@ Thumbs.db
 .vite/
 .codegraph/
 .atl/
+.vitest
