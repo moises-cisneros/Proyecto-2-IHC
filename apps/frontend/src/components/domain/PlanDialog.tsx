@@ -21,7 +21,7 @@ export function PlanDialog({ open, onOpenChange, onSubmit }: PlanDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <span className="mb-1 inline-flex size-12 items-center justify-center rounded-xl bg-brand-gradient text-primary-foreground shadow-md shadow-primary/30">
+          <span className="mb-1 inline-flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <CalendarPlus aria-hidden="true" className="size-6" />
           </span>
           <DialogTitle>Nuevo plan</DialogTitle>

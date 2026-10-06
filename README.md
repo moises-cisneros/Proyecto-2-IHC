@@ -46,11 +46,21 @@ Creados por el seed (solo para pruebas; el seed se niega a correr con `NODE_ENV=
 
 ## Mis planes
 
-En `/mis-planes` (con sesión) la barra superior muestra la marca, el icono de perfil con tu nombre y el botón "Cerrar sesión". Con "Nuevo plan" se abre un formulario (solo descripción y fecha límite); al guardar, el plan aparece como tarjeta sin recargar y se conserva al refrescar. El ID del plan lo genera el backend (UUID) y la tarjeta muestra sus primeros 8 caracteres; la lista se ordena por fecha límite.
+En `/mis-planes` (con sesión) la barra superior muestra la marca, el icono de perfil con tu nombre y el botón "Cerrar sesión". Con "Nuevo plan" se abre un formulario (solo descripción y fecha límite); al guardar, el plan aparece como tarjeta sin recargar y se conserva al refrescar. El ID del plan lo genera el backend (UUID); la lista se ordena por fecha límite. Cada plan nace como **Borrador** y se pasa a **Confirmado** con el botón "Confirmar plan" (pide confirmación y no tiene vuelta atrás). El menú ⋮ de la tarjeta permite eliminar el plan, también con confirmación.
 
-API (requiere cookie de sesión): `GET /api/plans` y `POST /api/plans`.
+API (requiere cookie de sesión): `GET /api/plans`, `POST /api/plans`, `POST /api/plans/:id/confirm` (`200` plan confirmado, `404` no existe o no es tuyo, `409` ya estaba confirmado) y `DELETE /api/plans/:id`.
 
 Pruebas unitarias (Vitest): `pnpm --filter backend test` y `pnpm --filter frontend test`.
+
+## Pruebas del estado del plan
+
+La regla de estados (`borrador` → `confirmado`) vive en `apps/backend/src/lib/planState.ts` y tiene cuatro pruebas unitarias en `planState.test.ts`: estado inicial, transición válida, transición inválida rechazada y datos preservados.
+
+```bash
+pnpm --filter backend test planState
+```
+
+Detalle en [docs/task-02-state-tests.md](docs/task-02-state-tests.md).
 
 ## Base de datos: seed y migraciones manuales
 
@@ -79,6 +89,7 @@ pnpm dev
 ## Documentación
 
 - [docs/task-01-access.md](docs/task-01-access.md): arquitectura base y flujo de acceso.
+- [docs/task-02-state-tests.md](docs/task-02-state-tests.md): regla de estados del plan y sus pruebas.
 - [AGENTS.md](AGENTS.md) y [CONTRIBUTING.md](CONTRIBUTING.md): reglas para agentes y colaboradores.
 
 ## Licencia

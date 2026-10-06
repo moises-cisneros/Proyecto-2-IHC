@@ -90,7 +90,7 @@ export default function RecoverPage() {
         description="Ya puedes entrar con tu nueva contraseña."
         icon={ShieldCheck}
       >
-        <SuccessNotice>Tu contraseña se actualizó correctamente.</SuccessNotice>
+        <SuccessNotice duration={0}>Tu contraseña se actualizó correctamente.</SuccessNotice>
         <Button asChild size="lg" className="w-full">
           <Link to="/login">Ir a iniciar sesión</Link>
         </Button>
@@ -105,7 +105,7 @@ export default function RecoverPage() {
         description="Ingresa el token de recuperación y elige tu nueva contraseña."
         icon={KeyRound}
       >
-        <SuccessNotice>
+        <SuccessNotice duration={0}>
           Si el correo existe, se generó un token de recuperación y te lo enviamos por email.
         </SuccessNotice>
         <form onSubmit={handleConfirm} noValidate className="grid gap-4">

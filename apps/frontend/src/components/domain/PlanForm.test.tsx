@@ -37,7 +37,7 @@ describe("PlanForm", () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
-  it("submits the trimmed payload when valid with default estado 'pendiente'", async () => {
+  it("submits only the trimmed description and due date when valid", async () => {
     const onSubmit = vi.fn().mockResolvedValue(ok);
     render(<PlanForm onSubmit={onSubmit} onCancel={() => {}} />);
     await userEvent.type(screen.getByLabelText("Descripción"), " Cena de grupo ");
@@ -47,7 +47,6 @@ describe("PlanForm", () => {
     expect(onSubmit).toHaveBeenCalledWith({
       description: "Cena de grupo",
       dueDate: "2026-12-24",
-      estado: "pendiente",
     });
   });
 

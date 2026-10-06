@@ -1,48 +1,13 @@
-import { CalendarDays, Clock } from "lucide-react";
-import type { Plan, PlanStatus } from "../../api/client";
+import { useState } from "react";
+import { CalendarDays, CircleCheck, Clock, EllipsisVertical, Trash2 } from "lucide-react";
+import { DropdownMenu } from "radix-ui";
+import type { Plan } from "../../api/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatDueDate, getDueStatus } from "../../lib/plans";
 import type { DueTone } from "../../lib/plans";
-
-interface StatusConfig {
-  label: string;
-  className: string;
-  style: { backgroundColor: string; color: string; borderColor: string };
-}
-
-export const STATUS_CONFIG: Record<string, StatusConfig> = {
-  hecho: {
-    label: "Hecho",
-    className: "bg-emerald-100 text-emerald-800 border-emerald-300",
-    style: {
-      backgroundColor: "#dcfce7",
-      color: "#166534",
-      borderColor: "#86efac",
-    },
-  },
-  retrasado: {
-    label: "Retrasado",
-    className: "bg-rose-100 text-rose-800 border-rose-300",
-    style: {
-      backgroundColor: "#ffe4e6",
-      color: "#9f1239",
-      borderColor: "#fca5a5",
-    },
-  },
-  pendiente: {
-    label: "Pendiente",
-    className: "bg-sky-100 text-sky-800 border-sky-300",
-    style: {
-      backgroundColor: "#e0f2fe",
-      color: "#075985",
-      borderColor: "#7dd3fc",
-    },
-  },
-};
-
-const STATUS_KEYS: PlanStatus[] = ["pendiente", "hecho", "retrasado"];
+import { ConfirmDialog } from "./ConfirmDialog";
 
 const toneStyles: Record<DueTone, { badge: "danger" | "warning" | "default" | "muted"; bar: string }> = {
   overdue: { badge: "danger", bar: "bg-destructive" },
@@ -53,72 +18,114 @@ const toneStyles: Record<DueTone, { badge: "danger" | "warning" | "default" | "m
 
 interface PlanCardProps {
   plan: Plan;
-  onStatusChange?: (id: string, estado: PlanStatus) => void;
-  onDelete?: (id: string) => void;
+  onConfirm?: (id: string) => Promise<void> | void;
+  onDelete?: (id: string) => Promise<void> | void;
 }
 
-export function PlanCard({ plan, onStatusChange, onDelete }: PlanCardProps) {
+type OpenDialog = "confirm" | "delete" | null;
+
+export function PlanCard({ plan, onConfirm, onDelete }: PlanCardProps) {
   const dueStatus = getDueStatus(plan.dueDate);
   const tone = toneStyles[dueStatus.tone];
+  const isConfirmed = plan.estado === "confirmado";
 
-  const statusKey = (plan.estado?.toLowerCase() ?? "pendiente") as PlanStatus;
-  const status = STATUS_CONFIG[statusKey] ?? STATUS_CONFIG.pendiente;
+  const [openDialog, setOpenDialog] = useState<OpenDialog>(null);
+  const [pending, setPending] = useState(false);
+
+  async function run(action?: (id: string) => Promise<void> | void) {
+    setPending(true);
+    try {
+      await action?.(plan.id);
+    } finally {
+      setPending(false);
+      setOpenDialog(null);
+    }
+  }
 
   return (
-    <article className="group relative flex h-full flex-col gap-4 overflow-hidden rounded-xl border bg-card p-5 pl-6 shadow-xs transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/10">
+    <article className="relative flex h-full flex-col gap-4 overflow-hidden rounded-xl border bg-card p-5 pl-6 shadow-xs transition-shadow hover:shadow-sm">
       <span aria-hidden="true" className={cn("absolute inset-y-0 left-0 w-1.5", tone.bar)} />
-      <div className="flex items-center justify-between gap-2">
-        <Badge variant={tone.badge}>
-          <Clock aria-hidden="true" />
-          {dueStatus.label}
-        </Badge>
-        <select
-          data-testid="plan-status-badge"
-          data-status={statusKey}
-          aria-label={`Estado: ${status.label}`}
-          value={statusKey}
-          onChange={(e) => onStatusChange?.(plan.id, e.target.value as PlanStatus)}
-          style={{
-            ...status.style,
-            cursor: onStatusChange ? "pointer" : "default",
-          }}
-          className={cn(
-            "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold shadow-xs transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-            status.className,
-          )}
-        >
-          {STATUS_KEYS.map((key) => (
-            <option key={key} value={key} className="bg-background text-foreground">
-              {STATUS_CONFIG[key].label}
-            </option>
-          ))}
-        </select>
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant={tone.badge}>
+            <Clock aria-hidden="true" />
+            {dueStatus.label}
+          </Badge>
+          <Badge
+            data-testid="plan-status-badge"
+            data-status={plan.estado}
+            variant={isConfirmed ? "success" : "muted"}
+          >
+            {isConfirmed ? <CircleCheck aria-hidden="true" /> : null}
+            {isConfirmed ? "Confirmado" : "Borrador"}
+          </Badge>
+        </div>
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              aria-label="Más acciones"
+              className="-mr-2 -mt-2 size-11 p-0 text-muted-foreground"
+            >
+              <EllipsisVertical aria-hidden="true" />
+            </Button>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Portal>
+            <DropdownMenu.Content
+              align="end"
+              sideOffset={4}
+              className="z-50 min-w-40 rounded-lg border bg-card p-1 shadow-md data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
+            >
+              <DropdownMenu.Item
+                onSelect={() => setOpenDialog("delete")}
+                className="flex min-h-11 cursor-pointer items-center gap-2 rounded-md px-3 text-sm font-semibold text-destructive outline-none data-highlighted:bg-destructive/10"
+              >
+                <Trash2 aria-hidden="true" className="size-4" />
+                Eliminar
+              </DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu.Portal>
+        </DropdownMenu.Root>
       </div>
       <p className="wrap-break-word text-base font-semibold leading-snug">{plan.description}</p>
       <p className="mt-auto flex items-center gap-2 border-t pt-3 text-sm text-muted-foreground">
         <CalendarDays aria-hidden="true" className="size-4 text-primary" />
         <time dateTime={plan.dueDate}>{formatDueDate(plan.dueDate)}</time>
       </p>
-      <div className="flex flex-wrap gap-2 border-t pt-3">
-        <Button
-          type="button"
-          size="sm"
-          disabled={statusKey === "hecho"}
-          onClick={() => onStatusChange?.(plan.id, "hecho")}
-        >
-          Confirmar
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          style={STATUS_CONFIG.retrasado.style}
-          className={cn("font-semibold hover:opacity-90", STATUS_CONFIG.retrasado.className)}
-          onClick={() => onDelete?.(plan.id)}
-        >
-          Eliminar
-        </Button>
-      </div>
+      {isConfirmed ? null : (
+        <div className="flex flex-wrap gap-2 border-t pt-3">
+          <Button type="button" size="sm" onClick={() => setOpenDialog("confirm")}>
+            Confirmar plan
+          </Button>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={openDialog === "confirm"}
+        onOpenChange={(open) => {
+          if (!pending) setOpenDialog(open ? "confirm" : null);
+        }}
+        title="¿Confirmar este plan?"
+        description={`«${plan.description}» pasará a Confirmado y ya no podrá volver a borrador.`}
+        confirmLabel="Confirmar"
+        pendingLabel="Confirmando…"
+        pending={pending}
+        onConfirm={() => void run(onConfirm)}
+      />
+      <ConfirmDialog
+        open={openDialog === "delete"}
+        onOpenChange={(open) => {
+          if (!pending) setOpenDialog(open ? "delete" : null);
+        }}
+        title="¿Eliminar este plan?"
+        description={`«${plan.description}» se eliminará de forma permanente.`}
+        confirmLabel="Eliminar"
+        pendingLabel="Eliminando…"
+        pending={pending}
+        destructive
+        onConfirm={() => void run(onDelete)}
+      />
     </article>
   );
 }

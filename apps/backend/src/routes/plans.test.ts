@@ -4,6 +4,7 @@ import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "../app.js";
 import { config } from "../lib/config.js";
+import { INITIAL_PLAN_STATE, confirmPlan } from "../lib/planState.js";
 import { SESSION_COOKIE } from "../lib/session.js";
 import type { PlansStore, StoredPlan } from "./plans.js";
 
@@ -33,16 +34,16 @@ function createMemoryStore(): PlansStore {
         userId,
         description: data.description,
         dueDate: new Date(`${data.dueDate}T00:00:00.000Z`),
-        estado: data.estado ?? "pendiente",
+        estado: INITIAL_PLAN_STATE,
         createdAt: new Date(Date.UTC(2026, 0, 1, 0, 0, counter)),
       };
       rows.push(row);
       return row;
     },
-    async updateStatus(userId, planId, estado) {
+    async confirm(userId, planId) {
       const row = rows.find((r) => r.id === planId && r.userId === userId);
       if (!row) return null;
-      row.estado = estado;
+      row.estado = confirmPlan(row).estado;
       return row;
     },
     async delete(userId, planId) {
@@ -155,80 +156,73 @@ describe("plans router", () => {
     ]);
   });
 
-  it("stores and serializes estado with default 'pendiente'", async () => {
+  it("creates every plan as 'borrador'", async () => {
     const res = await request(app).post("/api/plans").set("Cookie", cookieFor("u1")).send(body);
     expect(res.status).toBe(201);
-    expect(res.body.plan.estado).toBe("pendiente");
+    expect(res.body.plan.estado).toBe("borrador");
   });
 
-  it("stores and serializes custom estado ('hecho', 'retrasado')", async () => {
-    const hechoRes = await request(app)
+  it("ignores a client-sent estado on creation", async () => {
+    const res = await request(app)
       .post("/api/plans")
       .set("Cookie", cookieFor("u1"))
-      .send({ ...body, estado: "hecho" });
-    expect(hechoRes.status).toBe(201);
-    expect(hechoRes.body.plan.estado).toBe("hecho");
-
-    const retrasadoRes = await request(app)
-      .post("/api/plans")
-      .set("Cookie", cookieFor("u1"))
-      .send({ ...body, estado: "retrasado" });
-    expect(retrasadoRes.status).toBe(201);
-    expect(retrasadoRes.body.plan.estado).toBe("retrasado");
+      .send({ ...body, estado: "confirmado" });
+    expect(res.status).toBe(201);
+    expect(res.body.plan.estado).toBe("borrador");
   });
 
-  describe("PATCH /api/plans/:id", () => {
-    it("updates plan estado to 'hecho' and 'retrasado'", async () => {
+  describe("POST /api/plans/:id/confirm", () => {
+    const create = async () => {
       const created = await request(app).post("/api/plans").set("Cookie", cookieFor("u1")).send(body);
-      const planId = created.body.plan.id;
+      return created.body.plan.id as string;
+    };
 
-      const patchRes = await request(app)
-        .patch(`/api/plans/${planId}`)
-        .set("Cookie", cookieFor("u1"))
-        .send({ estado: "hecho" });
-      expect(patchRes.status).toBe(200);
-      expect(patchRes.body.plan.estado).toBe("hecho");
+    it("confirms a draft and persists the new state", async () => {
+      const planId = await create();
+      const res = await request(app)
+        .post(`/api/plans/${planId}/confirm`)
+        .set("Cookie", cookieFor("u1"));
+      expect(res.status).toBe(200);
+      expect(res.body.plan).toMatchObject({ id: planId, estado: "confirmado", ...body });
 
-      const patchRes2 = await request(app)
-        .patch(`/api/plans/${planId}`)
-        .set("Cookie", cookieFor("u1"))
-        .send({ estado: "retrasado" });
-      expect(patchRes2.status).toBe(200);
-      expect(patchRes2.body.plan.estado).toBe("retrasado");
+      const listed = await request(app).get("/api/plans").set("Cookie", cookieFor("u1"));
+      expect(listed.body.plans[0].estado).toBe("confirmado");
     });
 
-    it("rejects invalid estado with 400", async () => {
-      const created = await request(app).post("/api/plans").set("Cookie", cookieFor("u1")).send(body);
-      const planId = created.body.plan.id;
-
+    it("rejects a second confirmation with 409", async () => {
+      const planId = await create();
+      await request(app).post(`/api/plans/${planId}/confirm`).set("Cookie", cookieFor("u1"));
       const res = await request(app)
-        .patch(`/api/plans/${planId}`)
-        .set("Cookie", cookieFor("u1"))
-        .send({ estado: "cancelado" });
-      expect(res.status).toBe(400);
-      expect(res.body.errors).toHaveProperty("estado");
+        .post(`/api/plans/${planId}/confirm`)
+        .set("Cookie", cookieFor("u1"));
+      expect(res.status).toBe(409);
     });
 
     it("returns 404 if plan does not exist or belongs to another user", async () => {
-      const created = await request(app).post("/api/plans").set("Cookie", cookieFor("u1")).send(body);
-      const planId = created.body.plan.id;
+      const planId = await create();
+      const otherUser = await request(app)
+        .post(`/api/plans/${planId}/confirm`)
+        .set("Cookie", cookieFor("u2"));
+      expect(otherUser.status).toBe(404);
 
-      const otherUserRes = await request(app)
-        .patch(`/api/plans/${planId}`)
-        .set("Cookie", cookieFor("u2"))
-        .send({ estado: "hecho" });
-      expect(otherUserRes.status).toBe(404);
-
-      const notFoundRes = await request(app)
-        .patch(`/api/plans/00000000-0000-0000-0000-000000000000`)
-        .set("Cookie", cookieFor("u1"))
-        .send({ estado: "hecho" });
-      expect(notFoundRes.status).toBe(404);
+      const missing = await request(app)
+        .post("/api/plans/00000000-0000-0000-0000-000000000000/confirm")
+        .set("Cookie", cookieFor("u1"));
+      expect(missing.status).toBe(404);
     });
 
     it("requires authentication returning 401 without cookie", async () => {
-      const res = await request(app).patch("/api/plans/fake-id").send({ estado: "hecho" });
+      const res = await request(app).post("/api/plans/fake-id/confirm");
       expect(res.status).toBe(401);
+    });
+
+    it("no longer exposes PATCH to set arbitrary states", async () => {
+      const planId = await create();
+      const res = await request(app)
+        .patch(`/api/plans/${planId}`)
+        .set("Cookie", cookieFor("u1"))
+        .send({ estado: "hecho" });
+      expect(res.status).toBe(404);
     });
   });
 

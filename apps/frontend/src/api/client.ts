@@ -5,7 +5,7 @@ export interface PublicUser {
   createdAt: string;
 }
 
-export type PlanStatus = "pendiente" | "hecho" | "retrasado";
+export type PlanStatus = "borrador" | "confirmado";
 
 export interface Plan {
   id: string;
@@ -19,7 +19,6 @@ export interface Plan {
 export interface PlanInput {
   description: string;
   dueDate: string;
-  estado?: PlanStatus;
 }
 
 export class ApiError extends Error {
@@ -63,9 +62,6 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 const post = <T>(path: string, body?: unknown) =>
   request<T>(path, { method: "POST", body: body === undefined ? undefined : JSON.stringify(body) });
 
-const patch = <T>(path: string, body?: unknown) =>
-  request<T>(path, { method: "PATCH", body: body === undefined ? undefined : JSON.stringify(body) });
-
 const del = <T>(path: string) => request<T>(path, { method: "DELETE" });
 
 export const api = {
@@ -80,7 +76,6 @@ export const api = {
     post<{ message: string }>("/auth/recover/confirm", { email, token, newPassword }),
   listPlans: () => request<{ plans: Plan[] }>("/plans"),
   createPlan: (input: PlanInput) => post<{ plan: Plan }>("/plans", input),
-  updatePlanStatus: (id: string, estado: PlanStatus) =>
-    patch<{ plan: Plan }>(`/plans/${id}`, { estado }),
+  confirmPlan: (id: string) => post<{ plan: Plan }>(`/plans/${id}/confirm`),
   deletePlan: (id: string) => del<{ message: string }>(`/plans/${id}`),
 };

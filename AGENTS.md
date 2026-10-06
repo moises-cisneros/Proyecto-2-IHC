@@ -86,4 +86,4 @@ Las credenciales de los usuarios sembrados (solo para pruebas) están documentad
 
 - **Referencia obligatoria:** Toda nueva funcionalidad, módulo o refactorización debe alinearse estrictamente con la estructura y responsabilidades definidas en [ARCHITECTURE.md](ARCHITECTURE.md).
 - **Backend:** Capas claras (`routes/` para HTTP/validación, `services/` para lógica/Prisma, `middleware/` para filtros). Prohibido mezclar consultas directas a la base de datos en las rutas.
-- **Frontend:** Separación de presentación y lógica (`pages/` y `components/` para UI, `hooks/` para estado y orquestación, `api/` para llamadas HTTP). Prohibido invocar `fetch` directo desde componentes.
+- **Frontend:** Separación de presentación y lógica (`pages/` y `components/` para UI, `hooks/` para estado y orquestación, `api/` para llamadas HTTP). Prohibido invocar `fetch` directo desde componentes, el frontend debe seguir [DESIGN.md](apps/frontend/DESIGN.md).

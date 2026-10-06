@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { ApiError, api } from "../api/client";
-import type { Plan, PlanInput, PlanStatus } from "../api/client";
+import type { Plan, PlanInput } from "../api/client";
 import { comparePlans } from "../lib/plans";
 
 export type AddPlanResult =
   | { ok: true }
   | { ok: false; message: string; fieldErrors: Record<string, string> };
 
-export type UpdatePlanStatusResult =
+export type ConfirmPlanResult =
   | { ok: true }
   | { ok: false; message: string };
 
@@ -53,23 +53,18 @@ export function usePlans() {
     }
   }, []);
 
-  const updatePlanStatus = useCallback(
-    async (id: string, estado: PlanStatus): Promise<UpdatePlanStatusResult> => {
-      try {
-        const { plan } = await api.updatePlanStatus(id, estado);
-        setPlans((current) =>
-          current.map((p) => (p.id === id ? { ...p, estado: plan.estado } : p)),
-        );
-        return { ok: true };
-      } catch (error) {
-        if (error instanceof ApiError) {
-          return { ok: false, message: error.message };
-        }
-        return { ok: false, message: "No se pudo actualizar el estado del plan." };
+  const confirmPlan = useCallback(async (id: string): Promise<ConfirmPlanResult> => {
+    try {
+      const { plan } = await api.confirmPlan(id);
+      setPlans((current) => current.map((p) => (p.id === id ? { ...p, estado: plan.estado } : p)));
+      return { ok: true };
+    } catch (error) {
+      if (error instanceof ApiError) {
+        return { ok: false, message: error.message };
       }
-    },
-    [],
-  );
+      return { ok: false, message: "No se pudo confirmar el plan." };
+    }
+  }, []);
 
   const deletePlan = useCallback(
     async (id: string): Promise<DeletePlanResult> => {
@@ -87,5 +82,5 @@ export function usePlans() {
     [],
   );
 
-  return { plans, loading, loadError, addPlan, updatePlanStatus, deletePlan };
+  return { plans, loading, loadError, addPlan, confirmPlan, deletePlan };
 }

@@ -1,12 +1,10 @@
-import { useState } from "react";
-import type { FormEvent } from "react";
+import { type FormEvent, useState } from "react";
 import { CalendarDays, LoaderCircle } from "lucide-react";
 import type { PlanInput } from "../../api/client";
 import type { AddPlanResult } from "../../hooks/usePlans";
 import { Button } from "@/components/ui/button";
 import { Field } from "./Field";
 import { TextArea } from "./TextArea";
-
 import { ErrorAlert } from "./Notices";
 
 const DESCRIPTION_MAX = 500;
@@ -37,7 +35,7 @@ export function PlanForm({ onSubmit, onCancel }: PlanFormProps) {
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    const values: PlanInput = { description: description.trim(), dueDate, estado: "pendiente" };
+    const values: PlanInput = { description: description.trim(), dueDate };
     const nextErrors = validate(values);
     setErrors(nextErrors);
     setFormError(null);

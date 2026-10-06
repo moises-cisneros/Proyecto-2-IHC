@@ -3,7 +3,7 @@ import { LogoMark } from "./Logo";
 
 export function LoadingScreen() {
   return (
-    <main className="grid min-h-screen place-items-center bg-mesh">
+    <main className="grid min-h-screen place-items-center bg-background">
       <div role="status" className="flex flex-col items-center gap-4 text-muted-foreground">
         <LogoMark className="size-14 animate-pulse" />
         <p className="flex items-center gap-2 text-sm font-semibold">

@@ -1,5 +1,6 @@
-import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
 import type { Plan } from "../../api/client";
 import { PlanList } from "./PlanList";
 
@@ -7,7 +8,7 @@ const plan = (name: string, dueDate: string): Plan => ({
   id: `3f2a9c1e-0000-4000-8000-${name.padStart(12, "0")}`,
   description: `Descripción de ${name}`,
   dueDate,
-  estado: "pendiente",
+  estado: "borrador",
   createdAt: "2026-01-01T00:00:00.000Z",
 });
 
@@ -38,5 +39,29 @@ describe("PlanList", () => {
     render(<PlanList plans={[]} />);
     expect(screen.queryByRole("article")).not.toBeInTheDocument();
     expect(screen.getByText(/todavía no tienes planes/i)).toBeInTheDocument();
+  });
+
+  it("forwards the confirm action of a card with its plan id", async () => {
+    const onConfirm = vi.fn().mockResolvedValue(undefined);
+    const item = plan("A", "2026-01-01");
+    render(<PlanList plans={[item]} onConfirm={onConfirm} />);
+    await userEvent.click(screen.getByRole("button", { name: "Confirmar plan" }));
+    await userEvent.click(
+      within(screen.getByRole("alertdialog")).getByRole("button", { name: "Confirmar" }),
+    );
+    expect(onConfirm).toHaveBeenCalledWith(item.id);
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+  });
+
+  it("forwards the delete action of a card with its plan id", async () => {
+    const onDelete = vi.fn().mockResolvedValue(undefined);
+    const item = plan("A", "2026-01-01");
+    render(<PlanList plans={[item]} onDelete={onDelete} />);
+    await userEvent.click(screen.getByRole("button", { name: "Más acciones" }));
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Eliminar" }));
+    await userEvent.click(
+      within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Eliminar" }),
+    );
+    expect(onDelete).toHaveBeenCalledWith(item.id);
   });
 });

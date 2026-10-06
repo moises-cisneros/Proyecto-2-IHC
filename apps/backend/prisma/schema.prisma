@@ -23,7 +23,7 @@ model Plan {
   id          String   @id @default(uuid())
   description String
   dueDate     DateTime @db.Date
-  estado      String   @default("pendiente")
+  estado      String   @default("borrador")
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())

@@ -31,7 +31,7 @@ export function AuthDialog({ title, description, icon: Icon, children }: AuthDia
       >
         <DialogContent>
           <DialogHeader>
-            <span className="mb-1 inline-flex size-12 items-center justify-center rounded-xl bg-brand-gradient text-primary-foreground shadow-md shadow-primary/30">
+            <span className="mb-1 inline-flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
               <Icon aria-hidden="true" className="size-6" />
             </span>
             <DialogTitle>{title}</DialogTitle>

@@ -41,7 +41,7 @@ function PreviewCard({
   className?: string;
 }) {
   return (
-    <Card className={cn("gap-3 p-4 shadow-lg shadow-primary/10", className)}>
+    <Card className={cn("gap-3 p-4 shadow-sm", className)}>
       <Badge variant={variant}>
         <Clock aria-hidden="true" />
         {badge}
@@ -57,13 +57,13 @@ function PreviewCard({
 
 export function LandingScreen() {
   return (
-    <div className="min-h-screen bg-mesh">
+    <div className="min-h-screen bg-background">
       <PublicNavbar />
       <main>
         <section className="mx-auto grid max-w-6xl items-center gap-12 px-4 pb-20 pt-14 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:pt-20">
           <div className="grid justify-items-start gap-6">
             <h1 className="text-5xl font-extrabold leading-[1.02] sm:text-6xl lg:text-7xl">
-              Ayudar a un grupo a <span className="text-brand-gradient">organizar un plan.</span>
+              Ayudar a un grupo a <span className="text-primary">organizar un plan.</span>
             </h1>
             <p className="max-w-xl text-lg text-muted-foreground">
               Planazo reúne las ideas de tu grupo en un solo lugar: crea planes, ponles fecha
@@ -83,28 +83,26 @@ export function LandingScreen() {
           </div>
 
           <div aria-hidden="true" className="relative mx-auto w-full max-w-sm">
-            <div className="absolute -inset-8 rounded-[2.5rem] bg-brand-gradient opacity-20 blur-3xl" />
             <div className="relative grid gap-4">
               <PreviewCard
                 title="Escapada a la playa"
                 date="Sábado por la tarde"
                 badge="En 2 semanas"
                 variant="default"
-                className="animate-float"
               />
               <PreviewCard
                 title="Cena de cumpleaños"
                 date="Viernes por la noche"
                 badge="Mañana"
                 variant="warning"
-                className="translate-x-6 animate-float [animation-delay:-2s]"
+                className="translate-x-6"
               />
               <PreviewCard
                 title="Torneo de fútbol"
                 date="Domingo por la mañana"
                 badge="En 4 semanas"
                 variant="success"
-                className="-translate-x-3 animate-float [animation-delay:-4s]"
+                className="-translate-x-3"
               />
             </div>
           </div>
@@ -117,7 +115,7 @@ export function LandingScreen() {
           <ul className="m-0 grid list-none gap-4 p-0 md:grid-cols-3">
             {features.map(({ icon: Icon, title, text }) => (
               <li key={title}>
-                <Card className="h-full gap-3 p-6 transition-shadow hover:shadow-lg hover:shadow-primary/10">
+                <Card className="h-full gap-3 p-6 transition-shadow hover:shadow-sm">
                   <span className="inline-flex size-12 items-center justify-center rounded-xl bg-secondary text-primary">
                     <Icon aria-hidden="true" className="size-6" />
                   </span>
@@ -130,15 +128,7 @@ export function LandingScreen() {
         </section>
 
         <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
-          <div className="relative overflow-hidden rounded-3xl bg-ink px-6 py-12 text-center text-ink-foreground sm:px-12">
-            <div
-              aria-hidden="true"
-              className="absolute -right-16 -top-16 size-64 rounded-full bg-accent/25 blur-3xl"
-            />
-            <div
-              aria-hidden="true"
-              className="absolute -bottom-20 -left-10 size-72 rounded-full bg-primary/50 blur-3xl"
-            />
+          <div className="rounded-3xl bg-ink px-6 py-12 text-center text-ink-foreground sm:px-12">
             <div className="relative grid justify-items-center gap-5">
               <h2 className="max-w-xl text-3xl font-bold sm:text-4xl">
                 Tu próximo planazo empieza hoy

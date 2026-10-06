@@ -1,13 +1,11 @@
 /* Planazo design tokens: colors, typography and spacing only. Anything else lives in index.css. */
 
-/* Colors: teal brand, amber spark, coral accent. */
+/* Colors: teal brand, amber spark. */
 :root {
   --background: #f2f8f7;
   --foreground: #0b2a2e;
   --card: #ffffff;
   --card-foreground: #0b2a2e;
-  --popover: #ffffff;
-  --popover-foreground: #0b2a2e;
   --primary: #0f766e;
   --primary-foreground: #ffffff;
   --secondary: #d5f5ef;
@@ -19,15 +17,11 @@
   --destructive: #be123c;
   --success: #15803d;
   --warning: #b45309;
-  --coral: #f2557a;
   --ink: #062b30;
   --ink-foreground: #e6faf6;
   --border: #d0e2df;
   --input: #a9c5c1;
   --ring: #14b8a6;
-  --brand-start: #14b8a6;
-  --brand-mid: #0f766e;
-  --brand-end: #0b5d5f;
 }
 
 @theme inline {
@@ -35,8 +29,6 @@
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
@@ -48,15 +40,11 @@
   --color-destructive: var(--destructive);
   --color-success: var(--success);
   --color-warning: var(--warning);
-  --color-coral: var(--coral);
   --color-ink: var(--ink);
   --color-ink-foreground: var(--ink-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-brand-start: var(--brand-start);
-  --color-brand-mid: var(--brand-mid);
-  --color-brand-end: var(--brand-end);
 }
 
 /* Typography */
