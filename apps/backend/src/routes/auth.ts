@@ -1,9 +1,5 @@
-import { createHash, randomBytes } from "node:crypto";
 import { Router, type Request, type Response, type NextFunction } from "express";
-import bcrypt from "bcryptjs";
 import type { User } from "@prisma/client";
-import { prisma } from "../lib/prisma.js";
-import { sendPasswordResetEmail } from "../lib/mailer.js";
 import { clearSession, issueSession } from "../lib/session.js";
 import { toPublicUser } from "../lib/publicUser.js";
 import {
@@ -14,12 +10,9 @@ import {
   registerSchema,
 } from "../lib/schemas.js";
 import { requireAuth } from "../middleware/requireAuth.js";
+import { authService } from "../services/auth.service.js";
 
-const BCRYPT_COST = 10;
-const RESET_TTL_MS = 15 * 60 * 1000;
 const INVALID_CREDENTIALS = "Correo o contraseña incorrectos";
-
-const sha256 = (value: string) => createHash("sha256").update(value).digest("hex");
 
 type Handler = (req: Request, res: Response) => Promise<void>;
 const wrap = (handler: Handler) => (req: Request, res: Response, next: NextFunction) => {
@@ -36,16 +29,13 @@ authRouter.post(
       res.status(400).json({ message: "Datos inválidos", errors: fieldErrors(parsed.error) });
       return;
     }
-    const { name, email, password } = parsed.data;
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) {
+    const result = await authService.register(parsed.data);
+    if (!result.ok || !result.user) {
       res.status(409).json({ message: "Ya existe una cuenta con ese correo" });
       return;
     }
-    const passwordHash = await bcrypt.hash(password, BCRYPT_COST);
-    const user = await prisma.user.create({ data: { name, email, passwordHash } });
-    issueSession(res, user.id);
-    res.status(201).json({ user: toPublicUser(user) });
+    issueSession(res, result.user.id);
+    res.status(201).json({ user: toPublicUser(result.user) });
   }),
 );
 
@@ -58,9 +48,8 @@ authRouter.post(
       return;
     }
     const { email, password } = parsed.data;
-    const user = await prisma.user.findUnique({ where: { email } });
-    const valid = user ? await bcrypt.compare(password, user.passwordHash) : false;
-    if (!user || !valid) {
+    const user = await authService.authenticate(email, password);
+    if (!user) {
       res.status(401).json({ message: INVALID_CREDENTIALS });
       return;
     }
@@ -88,24 +77,10 @@ authRouter.post(
       return;
     }
     const { email } = parsed.data;
-    const message =
-      "Si el correo existe, te enviamos instrucciones de recuperación.";
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) {
-      res.status(200).json({ message });
-      return;
-    }
-    const token = randomBytes(24).toString("hex");
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        resetTokenHash: sha256(token),
-        resetTokenExpiresAt: new Date(Date.now() + RESET_TTL_MS),
-      },
+    await authService.requestReset(email);
+    res.status(200).json({
+      message: "Si el correo existe, te enviamos instrucciones de recuperación.",
     });
-    // Fire-and-forget: sendPasswordResetEmail never rejects and must not delay the response.
-    void sendPasswordResetEmail(user.email, token);
-    res.status(200).json({ message });
   }),
 );
 
@@ -118,24 +93,11 @@ authRouter.post(
       return;
     }
     const { email, token, newPassword } = parsed.data;
-    const user = await prisma.user.findUnique({ where: { email } });
-    const valid =
-      user !== null &&
-      user.resetTokenHash === sha256(token) &&
-      user.resetTokenExpiresAt !== null &&
-      user.resetTokenExpiresAt.getTime() > Date.now();
-    if (!user || !valid) {
+    const result = await authService.confirmReset(email, token, newPassword);
+    if (!result.ok) {
       res.status(400).json({ message: "Token inválido o expirado" });
       return;
     }
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        passwordHash: await bcrypt.hash(newPassword, BCRYPT_COST),
-        resetTokenHash: null,
-        resetTokenExpiresAt: null,
-      },
-    });
     res.status(200).json({ message: "Contraseña actualizada" });
   }),
 );

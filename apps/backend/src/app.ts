@@ -3,7 +3,9 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import { config } from "./lib/config.js";
 import { authRouter } from "./routes/auth.js";
-import { createPlansRouter, createPrismaPlansStore, type PlansStore } from "./routes/plans.js";
+import { createPlansRouter } from "./routes/plans.js";
+import { createPrismaPlansStore, type PlansStore } from "./services/plans.service.js";
+
 import { requireAuth } from "./middleware/requireAuth.js";
 
 export interface AppOptions {

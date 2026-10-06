@@ -1,61 +1,17 @@
 import { Router, type NextFunction, type Request, type Response } from "express";
 import type { User } from "@prisma/client";
-import { prisma } from "../lib/prisma.js";
 import {
   fieldErrors,
   planSchema,
   updatePlanStatusSchema,
-  type PlanInput,
-  type PlanStatus,
 } from "../lib/schemas.js";
+import {
+  type StoredPlan,
+  type PlansStore,
+  createPrismaPlansStore,
+} from "../services/plans.service.js";
 
-export interface StoredPlan {
-  id: string;
-  description: string;
-  dueDate: Date;
-  estado: string;
-  createdAt: Date;
-}
-
-export interface PlansStore {
-  list(userId: string): Promise<StoredPlan[]>;
-  /** The store generates the plan id. */
-  create(userId: string, data: PlanInput): Promise<StoredPlan>;
-  updateStatus(userId: string, planId: string, estado: PlanStatus): Promise<StoredPlan | null>;
-}
-
-export function createPrismaPlansStore(): PlansStore {
-  return {
-    list: (userId) =>
-      prisma.plan.findMany({
-        where: { userId },
-        orderBy: [{ dueDate: "asc" }, { createdAt: "asc" }],
-        select: { id: true, description: true, dueDate: true, estado: true, createdAt: true },
-      }),
-    create: (userId, data) =>
-      prisma.plan.create({
-        data: {
-          userId,
-          description: data.description,
-          dueDate: new Date(`${data.dueDate}T00:00:00.000Z`),
-          estado: data.estado ?? "pendiente",
-        },
-        select: { id: true, description: true, dueDate: true, estado: true, createdAt: true },
-      }),
-    updateStatus: async (userId, planId, estado) => {
-      const existing = await prisma.plan.findFirst({
-        where: { id: planId, userId },
-        select: { id: true },
-      });
-      if (!existing) return null;
-      return prisma.plan.update({
-        where: { id: planId },
-        data: { estado },
-        select: { id: true, description: true, dueDate: true, estado: true, createdAt: true },
-      });
-    },
-  };
-}
+export { type StoredPlan, type PlansStore, createPrismaPlansStore };
 
 const toDateString = (date: Date) => date.toISOString().slice(0, 10);
 
