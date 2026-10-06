@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Logo } from "../atoms/Logo";
+import { Logo } from "./Logo";
 
 export function PublicNavbar() {
   return (

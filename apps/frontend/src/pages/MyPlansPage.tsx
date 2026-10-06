@@ -3,10 +3,14 @@ import { CalendarClock, ListChecks, Plus, TriangleAlert } from "lucide-react";
 import type { PlanInput } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { Button } from "@/components/ui/button";
-import { ErrorAlert, SuccessNotice } from "../components/molecules/Notices";
-import { StatCard } from "../components/molecules/StatCard";
-import { PlanDialog } from "../components/organisms/PlanDialog";
-import { PlanList } from "../components/organisms/PlanList";
+import {
+  ErrorAlert,
+  PlanDialog,
+  PlanList,
+  StatCard,
+  SuccessNotice,
+} from "../components/domain";
+
 import { usePlans } from "../hooks/usePlans";
 import { daysUntil, getDueStatus } from "../lib/plans";
 

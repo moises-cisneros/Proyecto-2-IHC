@@ -4,10 +4,15 @@ import { ArrowLeft, KeyRound, LoaderCircle, Lock, Mail, ShieldCheck } from "luci
 import { Link, useSearchParams } from "react-router-dom";
 import { ApiError, api } from "../api/client";
 import { Button } from "@/components/ui/button";
-import { Field } from "../components/atoms/Field";
-import { TextLink } from "../components/atoms/TextLink";
-import { ErrorAlert, SuccessNotice } from "../components/molecules/Notices";
-import { AuthDialog, AuthFooter } from "../components/templates/AuthDialog";
+import {
+  AuthDialog,
+  AuthFooter,
+  ErrorAlert,
+  Field,
+  SuccessNotice,
+  TextLink,
+} from "../components/domain";
+
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

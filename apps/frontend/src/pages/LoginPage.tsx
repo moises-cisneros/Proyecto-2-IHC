@@ -5,10 +5,14 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { ApiError } from "../api/client";
 import { Button } from "@/components/ui/button";
-import { Field } from "../components/atoms/Field";
-import { TextLink } from "../components/atoms/TextLink";
-import { ErrorAlert } from "../components/molecules/Notices";
-import { AuthDialog, AuthFooter } from "../components/templates/AuthDialog";
+import {
+  AuthDialog,
+  AuthFooter,
+  ErrorAlert,
+  Field,
+  TextLink,
+} from "../components/domain";
+
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

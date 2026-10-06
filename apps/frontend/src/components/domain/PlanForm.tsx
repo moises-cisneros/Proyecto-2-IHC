@@ -4,8 +4,9 @@ import { CalendarDays, LoaderCircle } from "lucide-react";
 import type { PlanInput, PlanStatus } from "../../api/client";
 import type { AddPlanResult } from "../../hooks/usePlans";
 import { Button } from "@/components/ui/button";
-import { Field } from "../atoms/Field";
-import { TextArea } from "../atoms/TextArea";
+import { Field } from "./Field";
+import { TextArea } from "./TextArea";
+
 import { ErrorAlert } from "./Notices";
 
 const DESCRIPTION_MAX = 500;

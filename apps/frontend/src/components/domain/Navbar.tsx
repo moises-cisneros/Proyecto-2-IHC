@@ -2,8 +2,9 @@ import { CalendarDays, LogOut } from "lucide-react";
 import { Link, NavLink } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Logo } from "../atoms/Logo";
-import { ProfileMenu } from "../molecules/ProfileMenu";
+import { Logo } from "./Logo";
+import { ProfileMenu } from "./ProfileMenu";
+
 
 interface NavbarProps {
   name: string;

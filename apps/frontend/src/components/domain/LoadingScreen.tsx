@@ -1,5 +1,5 @@
 import { LoaderCircle } from "lucide-react";
-import { LogoMark } from "../atoms/Logo";
+import { LogoMark } from "./Logo";
 
 export function LoadingScreen() {
   return (

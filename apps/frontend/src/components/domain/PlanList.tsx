@@ -1,7 +1,7 @@
 import { CalendarPlus, Plus } from "lucide-react";
 import type { Plan, PlanStatus } from "../../api/client";
 import { Button } from "@/components/ui/button";
-import { PlanCard } from "../molecules/PlanCard";
+import { PlanCard } from "./PlanCard";
 
 interface PlanListProps {
   plans: Plan[];

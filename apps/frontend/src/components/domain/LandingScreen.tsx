@@ -5,8 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { Logo } from "../atoms/Logo";
-import { PublicNavbar } from "../organisms/PublicNavbar";
+import { Logo } from "./Logo";
+import { PublicNavbar } from "./PublicNavbar";
+
 
 const features: { icon: LucideIcon; title: string; text: string }[] = [
   {

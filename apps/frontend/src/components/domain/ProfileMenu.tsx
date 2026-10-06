@@ -1,4 +1,4 @@
-import { Avatar } from "../atoms/Avatar";
+import { Avatar } from "./Avatar";
 
 export function ProfileMenu({ name }: { name: string }) {
   return (

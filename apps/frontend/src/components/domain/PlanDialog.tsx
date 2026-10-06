@@ -8,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { PlanForm } from "../molecules/PlanForm";
+import { PlanForm } from "./PlanForm";
 
 interface PlanDialogProps {
   open: boolean;
