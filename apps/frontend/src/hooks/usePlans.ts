@@ -7,7 +7,15 @@ export type AddPlanResult =
   | { ok: true }
   | { ok: false; message: string; fieldErrors: Record<string, string> };
 
+export type UpdatePlanResult =
+  | { ok: true }
+  | { ok: false; message: string; fieldErrors: Record<string, string> };
+
 export type ConfirmPlanResult =
+  | { ok: true }
+  | { ok: false; message: string };
+
+export type CancelPlanResult =
   | { ok: true }
   | { ok: false; message: string };
 
@@ -53,6 +61,22 @@ export function usePlans() {
     }
   }, []);
 
+  const updatePlan = useCallback(
+    async (id: string, input: PlanInput): Promise<UpdatePlanResult> => {
+      try {
+        const { plan } = await api.updatePlan(id, input);
+        setPlans((current) => current.map((p) => (p.id === id ? plan : p)).sort(comparePlans));
+        return { ok: true };
+      } catch (error) {
+        if (error instanceof ApiError) {
+          return { ok: false, message: error.message, fieldErrors: error.fieldErrors };
+        }
+        return { ok: false, message: "No se pudo actualizar el plan.", fieldErrors: {} };
+      }
+    },
+    [],
+  );
+
   const confirmPlan = useCallback(async (id: string): Promise<ConfirmPlanResult> => {
     try {
       const { plan } = await api.confirmPlan(id);
@@ -63,6 +87,19 @@ export function usePlans() {
         return { ok: false, message: error.message };
       }
       return { ok: false, message: "No se pudo confirmar el plan." };
+    }
+  }, []);
+
+  const cancelPlan = useCallback(async (id: string): Promise<CancelPlanResult> => {
+    try {
+      const { plan } = await api.cancelPlan(id);
+      setPlans((current) => current.map((p) => (p.id === id ? { ...p, estado: plan.estado } : p)));
+      return { ok: true };
+    } catch (error) {
+      if (error instanceof ApiError) {
+        return { ok: false, message: error.message };
+      }
+      return { ok: false, message: "No se pudo cancelar el plan." };
     }
   }, []);
 
@@ -82,5 +119,5 @@ export function usePlans() {
     [],
   );
 
-  return { plans, loading, loadError, addPlan, confirmPlan, deletePlan };
+  return { plans, loading, loadError, addPlan, updatePlan, confirmPlan, cancelPlan, deletePlan };
 }

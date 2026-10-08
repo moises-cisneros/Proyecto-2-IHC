@@ -1,6 +1,6 @@
 import { Router, type NextFunction, type Request, type Response } from "express";
 import type { User } from "@prisma/client";
-import { InvalidTransitionError } from "../lib/planState.js";
+import { DeleteBlockedError, EditBlockedError, InvalidTransitionError } from "../lib/planState.js";
 import { fieldErrors, planSchema } from "../lib/schemas.js";
 import {
   type StoredPlan,
@@ -59,6 +59,33 @@ export function createPlansRouter(store: PlansStore): Router {
     }),
   );
 
+  router.put(
+    "/:id",
+    wrap(async (req, res) => {
+      const user = res.locals.user as User;
+      const planId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+      const parsed = planSchema.safeParse(req.body ?? {});
+      if (!parsed.success) {
+        res.status(400).json({ message: "Datos inválidos", errors: fieldErrors(parsed.error) });
+        return;
+      }
+      try {
+        const updated = await store.update(user.id, planId, parsed.data);
+        if (!updated) {
+          res.status(404).json({ message: "Plan no encontrado" });
+          return;
+        }
+        res.status(200).json({ plan: serialize(updated) });
+      } catch (error) {
+        if (error instanceof EditBlockedError) {
+          res.status(409).json({ message: "No se puede editar un plan cancelado" });
+          return;
+        }
+        throw error;
+      }
+    }),
+  );
+
   router.post(
     "/:id/confirm",
     wrap(async (req, res) => {
@@ -81,17 +108,47 @@ export function createPlansRouter(store: PlansStore): Router {
     }),
   );
 
+  router.post(
+    "/:id/cancel",
+    wrap(async (req, res) => {
+      const user = res.locals.user as User;
+      const planId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+      try {
+        const cancelled = await store.cancel(user.id, planId);
+        if (!cancelled) {
+          res.status(404).json({ message: "Plan no encontrado" });
+          return;
+        }
+        res.status(200).json({ plan: serialize(cancelled) });
+      } catch (error) {
+        if (error instanceof InvalidTransitionError) {
+          res.status(409).json({ message: "Solo un plan confirmado puede ser cancelado" });
+          return;
+        }
+        throw error;
+      }
+    }),
+  );
+
   router.delete(
     "/:id",
     wrap(async (req, res) => {
       const user = res.locals.user as User;
       const planId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-      const deleted = await store.delete(user.id, planId);
-      if (!deleted) {
-        res.status(404).json({ message: "Plan no encontrado" });
-        return;
+      try {
+        const deleted = await store.delete(user.id, planId);
+        if (!deleted) {
+          res.status(404).json({ message: "Plan no encontrado" });
+          return;
+        }
+        res.status(200).json({ message: "Plan eliminado" });
+      } catch (error) {
+        if (error instanceof DeleteBlockedError) {
+          res.status(409).json({ message: error.message });
+          return;
+        }
+        throw error;
       }
-      res.status(200).json({ message: "Plan eliminado" });
     }),
   );
 

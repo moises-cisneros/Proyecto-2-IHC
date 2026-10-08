@@ -11,7 +11,17 @@ vi.mock("../auth/AuthContext", () => ({
 
 vi.mock("../api/client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../api/client")>();
-  return { ...actual, api: { listPlans: vi.fn(), createPlan: vi.fn(), confirmPlan: vi.fn(), deletePlan: vi.fn() } };
+  return {
+    ...actual,
+    api: {
+      listPlans: vi.fn(),
+      createPlan: vi.fn(),
+      updatePlan: vi.fn(),
+      confirmPlan: vi.fn(),
+      cancelPlan: vi.fn(),
+      deletePlan: vi.fn(),
+    },
+  };
 });
 
 const listPlans = vi.mocked(api.listPlans);
@@ -157,5 +167,78 @@ describe("MyPlansPage", () => {
     await userEvent.click(screen.getByRole("button", { name: "Cancelar" }));
     expect(screen.queryByLabelText("ID del plan")).not.toBeInTheDocument();
     expect(createPlan).not.toHaveBeenCalled();
+  });
+
+  it("edits a plan through the edit dialog and updates the card", async () => {
+    listPlans.mockResolvedValue({ plans: [saved] });
+    const updateMock = vi.mocked(api.updatePlan);
+    const updatedPlan: Plan = {
+      ...saved,
+      description: "Cena de grupo modificada",
+      dueDate: "2026-12-25",
+    };
+    updateMock.mockResolvedValue({ plan: updatedPlan });
+
+    render(<MyPlansPage />);
+    await screen.findByRole("article");
+
+    await userEvent.click(screen.getByRole("button", { name: "Más acciones" }));
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Editar" }));
+
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveTextContent("Editar plan");
+    expect(screen.getByLabelText("Descripción")).toHaveValue("Cena de grupo");
+    expect(screen.getByLabelText("Fecha límite")).toHaveValue("2026-12-24");
+
+    await userEvent.clear(screen.getByLabelText("Descripción"));
+    await userEvent.type(screen.getByLabelText("Descripción"), "Cena de grupo modificada");
+    await userEvent.clear(screen.getByLabelText("Fecha límite"));
+    await userEvent.type(screen.getByLabelText("Fecha límite"), "2026-12-25");
+
+    await userEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+    expect(updateMock).toHaveBeenCalledWith(saved.id, {
+      description: "Cena de grupo modificada",
+      dueDate: "2026-12-25",
+    });
+    expect(await screen.findByRole("article")).toHaveTextContent("Cena de grupo modificada");
+    expect(screen.getByRole("status")).toHaveTextContent("Plan actualizado");
+  });
+
+  it("cancels a confirmed plan through the cancel dialog", async () => {
+    const confirmedPlan: Plan = { ...saved, estado: "confirmado" };
+    listPlans.mockResolvedValue({ plans: [confirmedPlan] });
+    const cancelMock = vi.mocked(api.cancelPlan);
+    cancelMock.mockResolvedValue({ plan: { ...confirmedPlan, estado: "cancelado" } });
+
+    render(<MyPlansPage />);
+    await screen.findByRole("article");
+
+    await userEvent.click(screen.getByRole("button", { name: "Cancelar plan" }));
+    const dialog = await screen.findByRole("alertdialog");
+    expect(dialog).toHaveTextContent("¿Cancelar este plan?");
+
+    await userEvent.click(within(dialog).getByRole("button", { name: "Cancelar plan" }));
+
+    expect(cancelMock).toHaveBeenCalledWith(confirmedPlan.id);
+    await waitFor(() =>
+      expect(screen.getByTestId("plan-status-badge")).toHaveTextContent("Cancelado"),
+    );
+    expect(screen.getByRole("status")).toHaveTextContent("Plan cancelado");
+  });
+
+  it("shows caution warning when editing a confirmed plan", async () => {
+    const confirmedPlan: Plan = { ...saved, estado: "confirmado" };
+    listPlans.mockResolvedValue({ plans: [confirmedPlan] });
+
+    render(<MyPlansPage />);
+    await screen.findByRole("article");
+
+    await userEvent.click(screen.getByRole("button", { name: "Más acciones" }));
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Editar" }));
+
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveTextContent("Editar plan");
+    expect(screen.getByRole("note")).toHaveTextContent("Este plan ya está confirmado");
   });
 });

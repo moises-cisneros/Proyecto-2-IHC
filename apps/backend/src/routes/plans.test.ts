@@ -4,7 +4,15 @@ import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "../app.js";
 import { config } from "../lib/config.js";
-import { INITIAL_PLAN_STATE, confirmPlan } from "../lib/planState.js";
+import {
+  INITIAL_PLAN_STATE,
+  cancelPlan,
+  canDelete,
+  canEdit,
+  confirmPlan,
+  DeleteBlockedError,
+  EditBlockedError,
+} from "../lib/planState.js";
 import { SESSION_COOKIE } from "../lib/session.js";
 import type { PlansStore, StoredPlan } from "./plans.js";
 
@@ -40,15 +48,34 @@ function createMemoryStore(): PlansStore {
       rows.push(row);
       return row;
     },
+    async update(userId, planId, data) {
+      const row = rows.find((r) => r.id === planId && r.userId === userId);
+      if (!row) return null;
+      if (!canEdit(row)) {
+        throw new EditBlockedError(row.estado as any);
+      }
+      row.description = data.description;
+      row.dueDate = new Date(`${data.dueDate}T00:00:00.000Z`);
+      return row;
+    },
     async confirm(userId, planId) {
       const row = rows.find((r) => r.id === planId && r.userId === userId);
       if (!row) return null;
       row.estado = confirmPlan(row).estado;
       return row;
     },
+    async cancel(userId, planId) {
+      const row = rows.find((r) => r.id === planId && r.userId === userId);
+      if (!row) return null;
+      row.estado = cancelPlan(row).estado;
+      return row;
+    },
     async delete(userId, planId) {
       const index = rows.findIndex((r) => r.id === planId && r.userId === userId);
       if (index === -1) return false;
+      if (!canDelete(rows[index])) {
+        throw new DeleteBlockedError("confirmado");
+      }
       rows.splice(index, 1);
       return true;
     },
@@ -226,10 +253,202 @@ describe("plans router", () => {
     });
   });
 
-  describe("DELETE /api/plans/:id", () => {
-    it("deletes a plan successfully returning 200 and removes it from list", async () => {
+  describe("PUT /api/plans/:id", () => {
+    it("updates a plan and returns 200 with the updated plan", async () => {
       const created = await request(app).post("/api/plans").set("Cookie", cookieFor("u1")).send(body);
       const planId = created.body.plan.id;
+
+      const updateData = { description: "Cena de fin de año actualizada", dueDate: "2026-12-31" };
+      const res = await request(app)
+        .put(`/api/plans/${planId}`)
+        .set("Cookie", cookieFor("u1"))
+        .send(updateData);
+
+      expect(res.status).toBe(200);
+      expect(res.body.plan).toMatchObject({
+        id: planId,
+        description: updateData.description,
+        dueDate: updateData.dueDate,
+        estado: "borrador",
+      });
+
+      const listRes = await request(app).get("/api/plans").set("Cookie", cookieFor("u1"));
+      expect(listRes.body.plans[0]).toMatchObject(updateData);
+    });
+
+    it("allows updating a confirmed plan", async () => {
+      const created = await request(app).post("/api/plans").set("Cookie", cookieFor("u1")).send(body);
+      const planId = created.body.plan.id;
+      await request(app).post(`/api/plans/${planId}/confirm`).set("Cookie", cookieFor("u1"));
+
+      const updateData = { description: "Nueva descripción", dueDate: "2026-12-25" };
+      const res = await request(app)
+        .put(`/api/plans/${planId}`)
+        .set("Cookie", cookieFor("u1"))
+        .send(updateData);
+
+      expect(res.status).toBe(200);
+      expect(res.body.plan.estado).toBe("confirmado");
+      expect(res.body.plan.description).toBe("Nueva descripción");
+    });
+
+    it("rejects updating a cancelled plan with 409", async () => {
+      const created = await request(app).post("/api/plans").set("Cookie", cookieFor("u1")).send(body);
+      const planId = created.body.plan.id;
+      await request(app).post(`/api/plans/${planId}/confirm`).set("Cookie", cookieFor("u1"));
+      await request(app).post(`/api/plans/${planId}/cancel`).set("Cookie", cookieFor("u1"));
+
+      const updateData = { description: "Intentando editar cancelado", dueDate: "2026-12-25" };
+      const res = await request(app)
+        .put(`/api/plans/${planId}`)
+        .set("Cookie", cookieFor("u1"))
+        .send(updateData);
+
+      expect(res.status).toBe(409);
+      expect(res.body.message).toContain("cancelado");
+    });
+
+    it("rejects invalid bodies with 400 and field errors", async () => {
+      const created = await request(app).post("/api/plans").set("Cookie", cookieFor("u1")).send(body);
+      const planId = created.body.plan.id;
+
+      const res = await request(app)
+        .put(`/api/plans/${planId}`)
+        .set("Cookie", cookieFor("u1"))
+        .send({ description: "", dueDate: "fecha-invalida" });
+
+      expect(res.status).toBe(400);
+      expect(res.body.errors).toHaveProperty("description");
+      expect(res.body.errors).toHaveProperty("dueDate");
+    });
+
+    it("returns 404 when plan belongs to another user or does not exist", async () => {
+      const created = await request(app).post("/api/plans").set("Cookie", cookieFor("u1")).send(body);
+      const planId = created.body.plan.id;
+
+      const otherUser = await request(app)
+        .put(`/api/plans/${planId}`)
+        .set("Cookie", cookieFor("u2"))
+        .send(body);
+      expect(otherUser.status).toBe(404);
+
+      const notFound = await request(app)
+        .put("/api/plans/00000000-0000-0000-0000-000000000000")
+        .set("Cookie", cookieFor("u1"))
+        .send(body);
+      expect(notFound.status).toBe(404);
+    });
+
+    it("requires authentication returning 401 without cookie", async () => {
+      const res = await request(app).put("/api/plans/any-id").send(body);
+      expect(res.status).toBe(401);
+    });
+  });
+
+  describe("POST /api/plans/:id/cancel", () => {
+    it("cancels a confirmed plan and returns 200", async () => {
+      const created = await request(app).post("/api/plans").set("Cookie", cookieFor("u1")).send(body);
+      const planId = created.body.plan.id;
+
+      await request(app).post(`/api/plans/${planId}/confirm`).set("Cookie", cookieFor("u1"));
+
+      const res = await request(app)
+        .post(`/api/plans/${planId}/cancel`)
+        .set("Cookie", cookieFor("u1"));
+
+      expect(res.status).toBe(200);
+      expect(res.body.plan.estado).toBe("cancelado");
+
+      const listRes = await request(app).get("/api/plans").set("Cookie", cookieFor("u1"));
+      expect(listRes.body.plans[0].estado).toBe("cancelado");
+    });
+
+    it("rejects cancelling a draft plan with 409", async () => {
+      const created = await request(app).post("/api/plans").set("Cookie", cookieFor("u1")).send(body);
+      const planId = created.body.plan.id;
+
+      const res = await request(app)
+        .post(`/api/plans/${planId}/cancel`)
+        .set("Cookie", cookieFor("u1"));
+
+      expect(res.status).toBe(409);
+      expect(res.body.message).toContain("confirmado");
+    });
+
+    it("rejects cancelling an already cancelled plan with 409", async () => {
+      const created = await request(app).post("/api/plans").set("Cookie", cookieFor("u1")).send(body);
+      const planId = created.body.plan.id;
+
+      await request(app).post(`/api/plans/${planId}/confirm`).set("Cookie", cookieFor("u1"));
+      await request(app).post(`/api/plans/${planId}/cancel`).set("Cookie", cookieFor("u1"));
+
+      const res = await request(app)
+        .post(`/api/plans/${planId}/cancel`)
+        .set("Cookie", cookieFor("u1"));
+
+      expect(res.status).toBe(409);
+    });
+
+    it("returns 404 when plan belongs to another user or does not exist", async () => {
+      const created = await request(app).post("/api/plans").set("Cookie", cookieFor("u1")).send(body);
+      const planId = created.body.plan.id;
+
+      const otherUser = await request(app)
+        .post(`/api/plans/${planId}/cancel`)
+        .set("Cookie", cookieFor("u2"));
+      expect(otherUser.status).toBe(404);
+
+      const notFound = await request(app)
+        .post("/api/plans/00000000-0000-0000-0000-000000000000/cancel")
+        .set("Cookie", cookieFor("u1"));
+      expect(notFound.status).toBe(404);
+    });
+
+    it("requires authentication returning 401 without cookie", async () => {
+      const res = await request(app).post("/api/plans/any-id/cancel");
+      expect(res.status).toBe(401);
+    });
+  });
+
+  describe("DELETE /api/plans/:id", () => {
+    it("deletes a draft plan successfully returning 200 and removes it from list", async () => {
+      const created = await request(app).post("/api/plans").set("Cookie", cookieFor("u1")).send(body);
+      const planId = created.body.plan.id;
+
+      const deleteRes = await request(app)
+        .delete(`/api/plans/${planId}`)
+        .set("Cookie", cookieFor("u1"));
+      expect(deleteRes.status).toBe(200);
+      expect(deleteRes.body.message).toBe("Plan eliminado");
+
+      const listRes = await request(app).get("/api/plans").set("Cookie", cookieFor("u1"));
+      expect(listRes.body.plans).toEqual([]);
+    });
+
+    it("blocks deleting a confirmed plan returning 409 with explanatory message", async () => {
+      const created = await request(app).post("/api/plans").set("Cookie", cookieFor("u1")).send(body);
+      const planId = created.body.plan.id;
+
+      await request(app).post(`/api/plans/${planId}/confirm`).set("Cookie", cookieFor("u1"));
+
+      const deleteRes = await request(app)
+        .delete(`/api/plans/${planId}`)
+        .set("Cookie", cookieFor("u1"));
+      expect(deleteRes.status).toBe(409);
+      expect(deleteRes.body.message).toContain("cancelarse");
+
+      // Verify the plan is still intact
+      const listRes = await request(app).get("/api/plans").set("Cookie", cookieFor("u1"));
+      expect(listRes.body.plans).toHaveLength(1);
+      expect(listRes.body.plans[0].estado).toBe("confirmado");
+    });
+
+    it("allows deleting a cancelled plan returning 200", async () => {
+      const created = await request(app).post("/api/plans").set("Cookie", cookieFor("u1")).send(body);
+      const planId = created.body.plan.id;
+
+      await request(app).post(`/api/plans/${planId}/confirm`).set("Cookie", cookieFor("u1"));
+      await request(app).post(`/api/plans/${planId}/cancel`).set("Cookie", cookieFor("u1"));
 
       const deleteRes = await request(app)
         .delete(`/api/plans/${planId}`)
@@ -270,3 +489,4 @@ describe("plans router", () => {
     });
   });
 });
+

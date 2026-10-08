@@ -5,7 +5,7 @@ export interface PublicUser {
   createdAt: string;
 }
 
-export type PlanStatus = "borrador" | "confirmado";
+export type PlanStatus = "borrador" | "confirmado" | "cancelado";
 
 export interface Plan {
   id: string;
@@ -62,6 +62,9 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 const post = <T>(path: string, body?: unknown) =>
   request<T>(path, { method: "POST", body: body === undefined ? undefined : JSON.stringify(body) });
 
+const put = <T>(path: string, body?: unknown) =>
+  request<T>(path, { method: "PUT", body: body === undefined ? undefined : JSON.stringify(body) });
+
 const del = <T>(path: string) => request<T>(path, { method: "DELETE" });
 
 export const api = {
@@ -76,6 +79,8 @@ export const api = {
     post<{ message: string }>("/auth/recover/confirm", { email, token, newPassword }),
   listPlans: () => request<{ plans: Plan[] }>("/plans"),
   createPlan: (input: PlanInput) => post<{ plan: Plan }>("/plans", input),
+  updatePlan: (id: string, input: PlanInput) => put<{ plan: Plan }>(`/plans/${id}`, input),
   confirmPlan: (id: string) => post<{ plan: Plan }>(`/plans/${id}/confirm`),
+  cancelPlan: (id: string) => post<{ plan: Plan }>(`/plans/${id}/cancel`),
   deletePlan: (id: string) => del<{ message: string }>(`/plans/${id}`),
 };

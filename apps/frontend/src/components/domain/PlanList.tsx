@@ -6,11 +6,20 @@ import { PlanCard } from "./PlanCard";
 interface PlanListProps {
   plans: Plan[];
   onCreate?: () => void;
+  onEdit?: (plan: Plan) => void;
   onConfirm?: (id: string) => Promise<void> | void;
+  onCancel?: (id: string) => Promise<void> | void;
   onDelete?: (id: string) => Promise<void> | void;
 }
 
-export function PlanList({ plans, onCreate, onConfirm, onDelete }: PlanListProps) {
+export function PlanList({
+  plans,
+  onCreate,
+  onEdit,
+  onConfirm,
+  onCancel,
+  onDelete,
+}: PlanListProps) {
   if (plans.length === 0) {
     return (
       <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-input bg-card/70 px-6 py-14 text-center">
@@ -36,7 +45,13 @@ export function PlanList({ plans, onCreate, onConfirm, onDelete }: PlanListProps
     <ul className="m-0 grid list-none gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3">
       {plans.map((plan) => (
         <li key={plan.id}>
-          <PlanCard plan={plan} onConfirm={onConfirm} onDelete={onDelete} />
+          <PlanCard
+            plan={plan}
+            onEdit={onEdit}
+            onConfirm={onConfirm}
+            onCancel={onCancel}
+            onDelete={onDelete}
+          />
         </li>
       ))}
     </ul>

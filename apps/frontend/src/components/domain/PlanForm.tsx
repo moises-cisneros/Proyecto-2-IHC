@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { CalendarDays, LoaderCircle } from "lucide-react";
 import type { PlanInput } from "../../api/client";
 import type { AddPlanResult } from "../../hooks/usePlans";
@@ -24,14 +24,30 @@ function validate(values: PlanInput): Errors {
 interface PlanFormProps {
   onSubmit: (input: PlanInput) => Promise<AddPlanResult>;
   onCancel: () => void;
+  initialData?: PlanInput | null;
+  submitLabel?: string;
+  submittingLabel?: string;
 }
 
-export function PlanForm({ onSubmit, onCancel }: PlanFormProps) {
-  const [description, setDescription] = useState("");
-  const [dueDate, setDueDate] = useState("");
+export function PlanForm({
+  onSubmit,
+  onCancel,
+  initialData,
+  submitLabel = "Crear plan",
+  submittingLabel = "Creando…",
+}: PlanFormProps) {
+  const [description, setDescription] = useState(initialData?.description ?? "");
+  const [dueDate, setDueDate] = useState(initialData?.dueDate ?? "");
   const [errors, setErrors] = useState<Errors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    setDescription(initialData?.description ?? "");
+    setDueDate(initialData?.dueDate ?? "");
+    setErrors({});
+    setFormError(null);
+  }, [initialData]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -80,7 +96,7 @@ export function PlanForm({ onSubmit, onCancel }: PlanFormProps) {
         </Button>
         <Button type="submit" disabled={submitting}>
           {submitting ? <LoaderCircle aria-hidden="true" className="animate-spin" /> : null}
-          {submitting ? "Creando…" : "Crear plan"}
+          {submitting ? submittingLabel : submitLabel}
         </Button>
       </div>
     </form>
