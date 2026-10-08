@@ -56,8 +56,8 @@ describe("planSchema", () => {
     if (result.success) expect(result.data).toEqual(valid);
   });
 
-  it("exposes only borrador and confirmado as plan states", () => {
-    expect([...planStatusValues]).toEqual(["borrador", "confirmado"]);
+  it("exposes borrador, confirmado and cancelado as plan states", () => {
+    expect([...planStatusValues]).toEqual(["borrador", "confirmado", "cancelado"]);
   });
 
   it("drops a client-sent estado from the parsed data", () => {

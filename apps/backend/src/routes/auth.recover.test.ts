@@ -22,7 +22,9 @@ const plansStore: PlansStore = {
   create: async () => {
     throw new Error("unused");
   },
+  update: async () => null,
   confirm: async () => null,
+  cancel: async () => null,
   delete: async () => false,
 };
 const flush = () => new Promise((resolve) => setImmediate(resolve));

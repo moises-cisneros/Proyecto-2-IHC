@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { CalendarClock, ListChecks, Plus, TriangleAlert } from "lucide-react";
-import type { PlanInput } from "../api/client";
+import type { Plan, PlanInput } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,13 +16,24 @@ import { daysUntil, getDueStatus } from "../lib/plans";
 
 export default function MyPlansPage() {
   const { user } = useAuth();
-  const { plans, loading, loadError, addPlan, confirmPlan, deletePlan } = usePlans();
+  const { plans, loading, loadError, addPlan, updatePlan, confirmPlan, cancelPlan, deletePlan } =
+    usePlans();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   async function handleSubmit(input: PlanInput) {
     setActionError(null);
+    if (editingPlan) {
+      const result = await updatePlan(editingPlan.id, input);
+      if (result.ok) {
+        setDialogOpen(false);
+        setEditingPlan(null);
+        setNotice("Plan actualizado correctamente.");
+      }
+      return result;
+    }
     const result = await addPlan(input);
     if (result.ok) {
       setDialogOpen(false);
@@ -31,8 +42,17 @@ export default function MyPlansPage() {
     return result;
   }
 
-  function openDialog() {
+  function openCreateDialog() {
+    setEditingPlan(null);
     setNotice(null);
+    setActionError(null);
+    setDialogOpen(true);
+  }
+
+  function handleEdit(plan: Plan) {
+    setEditingPlan(plan);
+    setNotice(null);
+    setActionError(null);
     setDialogOpen(true);
   }
 
@@ -41,6 +61,14 @@ export default function MyPlansPage() {
     setActionError(null);
     const result = await confirmPlan(id);
     if (result.ok) setNotice("Plan confirmado correctamente.");
+    else setActionError(result.message);
+  }
+
+  async function handleCancel(id: string) {
+    setNotice(null);
+    setActionError(null);
+    const result = await cancelPlan(id);
+    if (result.ok) setNotice("Plan cancelado correctamente.");
     else setActionError(result.message);
   }
 
@@ -64,7 +92,7 @@ export default function MyPlansPage() {
             Organiza y da seguimiento a los planes de tu grupo.
           </p>
         </div>
-        <Button type="button" size="lg" onClick={openDialog}>
+        <Button type="button" size="lg" onClick={openCreateDialog}>
           <Plus aria-hidden="true" />
           Nuevo plan
         </Button>
@@ -100,14 +128,32 @@ export default function MyPlansPage() {
           ) : null}
           <PlanList
             plans={plans}
-            onCreate={openDialog}
+            onCreate={openCreateDialog}
+            onEdit={handleEdit}
             onConfirm={handleConfirm}
+            onCancel={handleCancel}
             onDelete={handleDelete}
           />
         </>
       )}
 
-      <PlanDialog open={dialogOpen} onOpenChange={setDialogOpen} onSubmit={handleSubmit} />
+      <PlanDialog
+        open={dialogOpen}
+        onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (!open) setEditingPlan(null);
+        }}
+        initialData={
+          editingPlan
+            ? {
+                description: editingPlan.description,
+                dueDate: editingPlan.dueDate,
+                estado: editingPlan.estado,
+              }
+            : null
+        }
+        onSubmit={handleSubmit}
+      />
     </div>
   );
 }
