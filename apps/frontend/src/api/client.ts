@@ -14,6 +14,9 @@ export interface Plan {
   dueDate: string;
   estado: PlanStatus;
   createdAt: string;
+  shareCode?: string;
+  isOwner?: boolean;
+  ownerName?: string;
 }
 
 export interface PlanInput {
@@ -79,6 +82,7 @@ export const api = {
     post<{ message: string }>("/auth/recover/confirm", { email, token, newPassword }),
   listPlans: () => request<{ plans: Plan[] }>("/plans"),
   createPlan: (input: PlanInput) => post<{ plan: Plan }>("/plans", input),
+  joinPlan: (code: string) => post<{ plan: Plan }>("/plans/join", { code }),
   updatePlan: (id: string, input: PlanInput) => put<{ plan: Plan }>(`/plans/${id}`, input),
   confirmPlan: (id: string) => post<{ plan: Plan }>(`/plans/${id}/confirm`),
   cancelPlan: (id: string) => post<{ plan: Plan }>(`/plans/${id}/cancel`),

@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { CalendarClock, ListChecks, Plus, TriangleAlert } from "lucide-react";
+import { CalendarClock, ListChecks, Plus, TriangleAlert, Users } from "lucide-react";
 import type { Plan, PlanInput } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
   ErrorAlert,
+  JoinPlanDialog,
   PlanDialog,
   PlanList,
   StatCard,
@@ -16,9 +17,19 @@ import { daysUntil, getDueStatus } from "../lib/plans";
 
 export default function MyPlansPage() {
   const { user } = useAuth();
-  const { plans, loading, loadError, addPlan, updatePlan, confirmPlan, cancelPlan, deletePlan } =
-    usePlans();
+  const {
+    plans,
+    loading,
+    loadError,
+    addPlan,
+    joinPlan,
+    updatePlan,
+    confirmPlan,
+    cancelPlan,
+    deletePlan,
+  } = usePlans();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [joinDialogOpen, setJoinDialogOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -38,6 +49,15 @@ export default function MyPlansPage() {
     if (result.ok) {
       setDialogOpen(false);
       setNotice("Plan creado correctamente.");
+    }
+    return result;
+  }
+
+  async function handleJoin(code: string) {
+    setActionError(null);
+    const result = await joinPlan(code);
+    if (result.ok) {
+      setNotice("Te has unido al plan correctamente.");
     }
     return result;
   }
@@ -92,10 +112,25 @@ export default function MyPlansPage() {
             Organiza y da seguimiento a los planes de tu grupo.
           </p>
         </div>
-        <Button type="button" size="lg" onClick={openCreateDialog}>
-          <Plus aria-hidden="true" />
-          Nuevo plan
-        </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            onClick={() => {
+              setNotice(null);
+              setActionError(null);
+              setJoinDialogOpen(true);
+            }}
+          >
+            <Users aria-hidden="true" />
+            Unirse con código
+          </Button>
+          <Button type="button" size="lg" onClick={openCreateDialog}>
+            <Plus aria-hidden="true" />
+            Nuevo plan
+          </Button>
+        </div>
       </header>
 
       {notice ? (
@@ -128,7 +163,6 @@ export default function MyPlansPage() {
           ) : null}
           <PlanList
             plans={plans}
-            onCreate={openCreateDialog}
             onEdit={handleEdit}
             onConfirm={handleConfirm}
             onCancel={handleCancel}
@@ -143,16 +177,14 @@ export default function MyPlansPage() {
           setDialogOpen(open);
           if (!open) setEditingPlan(null);
         }}
-        initialData={
-          editingPlan
-            ? {
-                description: editingPlan.description,
-                dueDate: editingPlan.dueDate,
-                estado: editingPlan.estado,
-              }
-            : null
-        }
+        initialData={editingPlan}
         onSubmit={handleSubmit}
+      />
+
+      <JoinPlanDialog
+        open={joinDialogOpen}
+        onOpenChange={setJoinDialogOpen}
+        onJoin={handleJoin}
       />
     </div>
   );

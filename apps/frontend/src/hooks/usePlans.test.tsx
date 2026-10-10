@@ -12,6 +12,7 @@ vi.mock("../api/client", async (importOriginal) => {
     api: {
       listPlans: vi.fn(),
       createPlan: vi.fn(),
+      joinPlan: vi.fn(),
       updatePlan: vi.fn(),
       confirmPlan: vi.fn(),
       cancelPlan: vi.fn(),
@@ -30,6 +31,7 @@ const plan = (name: string, dueDate: string, createdAt: string): Plan => ({
 
 const listPlans = vi.mocked(api.listPlans);
 const createPlan = vi.mocked(api.createPlan);
+const joinPlanMock = vi.mocked(api.joinPlan);
 const updatePlanMock = vi.mocked(api.updatePlan);
 const confirmPlanMock = vi.mocked(api.confirmPlan);
 const cancelPlanMock = vi.mocked(api.cancelPlan);
@@ -249,6 +251,46 @@ describe("usePlans", () => {
 
     expect(outcome).toEqual({ ok: false, message: "Error en el servidor" });
     expect(result.current.plans).toHaveLength(1);
+  });
+
+  it("inserts a joined plan in due-date order on success", async () => {
+    listPlans.mockResolvedValue({
+      plans: [plan("A", "2026-03-01", "2026-01-01T00:00:00.000Z")],
+    });
+    const joined = { ...plan("B", "2026-05-01", "2026-01-02T00:00:00.000Z"), isOwner: false };
+    joinPlanMock.mockResolvedValue({ plan: joined });
+
+    const { result } = renderHook(() => usePlans());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    let outcome: Awaited<ReturnType<typeof result.current.joinPlan>> | undefined;
+    await act(async () => {
+      outcome = await result.current.joinPlan("PLZ-TEST01");
+    });
+
+    expect(outcome).toEqual({ ok: true });
+    expect(result.current.plans).toHaveLength(2);
+    expect(result.current.plans[1].id).toBe(joined.id);
+  });
+
+  it("returns error message and retains state when joining fails", async () => {
+    listPlans.mockResolvedValue({ plans: [] });
+    joinPlanMock.mockRejectedValue(new ApiError(404, "Plan no encontrado con este código"));
+
+    const { result } = renderHook(() => usePlans());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    let outcome: Awaited<ReturnType<typeof result.current.joinPlan>> | undefined;
+    await act(async () => {
+      outcome = await result.current.joinPlan("PLZ-NOTFOUND");
+    });
+
+    expect(outcome).toEqual({
+      ok: false,
+      message: "Plan no encontrado con este código",
+      fieldErrors: {},
+    });
+    expect(result.current.plans).toHaveLength(0);
   });
 });
 

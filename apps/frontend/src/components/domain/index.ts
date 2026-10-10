@@ -3,6 +3,7 @@ export * from "./AuthDialog";
 export * from "./Avatar";
 export * from "./ConfirmDialog";
 export * from "./Field";
+export * from "./JoinPlanDialog";
 export * from "./LandingScreen";
 export * from "./LoadingScreen";
 export * from "./Logo";
