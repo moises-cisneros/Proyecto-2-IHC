@@ -101,15 +101,11 @@ export function PlanCard({ plan, onEdit, onConfirm, onCancel, onDelete, onLeave 
             ) : null}
             {PLAN_STATUS_LABELS[plan.estado]}
           </Badge>
-          {isOwner ? (
-            <Badge variant="muted" className="text-xs">
-              Creador
-            </Badge>
-          ) : (
+          {!isOwner ? (
             <Badge variant="outline" data-testid="guest-badge" className="text-xs">
               Invitado
             </Badge>
-          )}
+          ) : null}
         </div>
         <DropdownMenu.Root>
           <DropdownMenu.Trigger asChild>
@@ -169,8 +165,17 @@ export function PlanCard({ plan, onEdit, onConfirm, onCancel, onDelete, onLeave 
                   onSelect={() => changeDialog("leave")}
                   className="flex min-h-11 cursor-pointer items-center gap-2 rounded-md px-3 text-sm font-semibold text-destructive outline-none data-highlighted:bg-destructive/10"
                 >
-                  <LogOut aria-hidden="true" className="size-4" />
-                  Abandonar plan
+                  {isCancelled ? (
+                    <>
+                      <Trash2 aria-hidden="true" className="size-4" />
+                      Eliminar de mi vista
+                    </>
+                  ) : (
+                    <>
+                      <LogOut aria-hidden="true" className="size-4" />
+                      Abandonar plan
+                    </>
+                  )}
                 </DropdownMenu.Item>
               )}
             </DropdownMenu.Content>
@@ -264,8 +269,19 @@ export function PlanCard({ plan, onEdit, onConfirm, onCancel, onDelete, onLeave 
             role="note"
             className="flex items-start gap-2 rounded-lg border border-border/60 bg-muted/40 p-2.5 text-xs text-muted-foreground"
           >
-            <Eye aria-hidden="true" className="size-4 shrink-0 mt-0.5 text-muted-foreground" />
-            <span>Solo lectura: solo el creador puede editar, confirmar o cancelar este plan.</span>
+            {isCancelled ? (
+              <>
+                <Info aria-hidden="true" className="size-4 shrink-0 mt-0.5 text-muted-foreground" />
+                <span>
+                  Este plan fue cancelado por el creador. Puedes eliminarlo de tu vista desde «Más acciones».
+                </span>
+              </>
+            ) : (
+              <>
+                <Eye aria-hidden="true" className="size-4 shrink-0 mt-0.5 text-muted-foreground" />
+                <span>Solo lectura: solo el creador puede editar, confirmar o cancelar este plan.</span>
+              </>
+            )}
           </div>
         )}
       </div>
@@ -316,10 +332,14 @@ export function PlanCard({ plan, onEdit, onConfirm, onCancel, onDelete, onLeave 
         onOpenChange={(open) => {
           if (!pending) changeDialog(open ? "leave" : null);
         }}
-        title="¿Abandonar este plan?"
-        description={`«${plan.titulo || plan.description}» desaparecerá de tu lista. Podrás volver a unirte con el código de compartir.`}
-        confirmLabel="Abandonar"
-        pendingLabel="Abandonando…"
+        title={isCancelled ? "¿Eliminar este plan de tu vista?" : "¿Abandonar este plan?"}
+        description={
+          isCancelled
+            ? `«${plan.titulo || plan.description}» desaparecerá de tu vista.`
+            : `«${plan.titulo || plan.description}» desaparecerá de tu lista. Podrás volver a unirte con el código de compartir.`
+        }
+        confirmLabel={isCancelled ? "Eliminar de mi vista" : "Abandonar"}
+        pendingLabel={isCancelled ? "Eliminando…" : "Abandonando…"}
         pending={pending}
         error={actionError}
         destructive

@@ -88,7 +88,7 @@ export function PlanFiltersBar({
         </div>
 
         {/* Status and Date selects */}
-        <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 lg:flex lg:items-center">
+        <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-2 lg:flex lg:items-end">
           <div className="grid min-w-0 gap-1.5">
             <label htmlFor="plan-status-filter" className="text-xs font-semibold text-muted-foreground whitespace-nowrap">
               Estado
